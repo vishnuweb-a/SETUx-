@@ -41,6 +41,16 @@ export const config = {
   rateLimit: {
     windowMs: 15 * 60 * 1000,
     max: 100,
+
+    /**
+     * Credential endpoints get a tighter budget than the general API
+     * (security-design.md §30). Ten attempts per 15 minutes leaves room for a
+     * user who mistypes a password without leaving brute force practical.
+     */
+    auth: {
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+    },
   },
 } as const;
 
