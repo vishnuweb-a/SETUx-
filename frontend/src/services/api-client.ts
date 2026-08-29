@@ -4,6 +4,50 @@ import { CLIENT_ERROR_CODES, type ApiErrorBody, type ApiSuccessBody } from '@/ty
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 /**
+ * Supplies the current access token, or `null` when nobody is signed in.
+ *
+ * Injected by the auth layer at start-up rather than imported here, so this
+ * module keeps knowing nothing about Supabase and the two can be tested apart.
+ */
+type AccessTokenProvider = () => Promise<string | null>;
+
+let getAccessToken: AccessTokenProvider = async () => null;
+
+/**
+ * Registers the source of the bearer token for every subsequent request.
+ *
+ * Called once, from the auth provider. Centralising it here is what keeps
+ * `Authorization` headers out of individual components and feature services
+ * (Phase 3 §28).
+ */
+export const setAccessTokenProvider = (provider: AccessTokenProvider): void => {
+  getAccessToken = provider;
+};
+
+/** Handler invoked when the backend reports the session is no longer valid. */
+type UnauthorizedHandler = () => void;
+
+let onUnauthorized: UnauthorizedHandler = () => {};
+
+/**
+ * Registers what should happen when a request comes back 401.
+ *
+ * The auth provider uses this to tear down its state the moment the backend
+ * stops accepting the session, so protected data cannot linger on screen after
+ * a session expires (Phase 3 §13).
+ */
+export const setUnauthorizedHandler = (handler: UnauthorizedHandler): void => {
+  onUnauthorized = handler;
+};
+
+/** 401 codes that mean "this session is finished", as opposed to a bad login. */
+const SESSION_INVALID_CODES = new Set([
+  'AUTH_TOKEN_MISSING',
+  'AUTH_INVALID_TOKEN',
+  'AUTH_SESSION_EXPIRED',
+]);
+
+/**
  * Normalised failure raised by every request made through this client.
  *
  * `code` is the backend's machine-readable code where one was returned, or a
@@ -57,11 +101,19 @@ export async function apiRequest<TData>(
   const timeoutController = new AbortController();
   const timer = setTimeout(() => timeoutController.abort(), timeoutMs);
 
+  // Resolved per request rather than captured once, so a token refreshed in the
+  // background is picked up automatically.
+  const accessToken = await getAccessToken();
+
   let response: Response;
   try {
     response = await fetch(`${env.VITE_API_BASE_URL}${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
       signal: signal ? AbortSignal.any([signal, timeoutController.signal]) : timeoutController.signal,
     });
   } catch (cause) {
@@ -86,6 +138,12 @@ export async function apiRequest<TData>(
   const body: unknown = await response.json().catch(() => null);
 
   if (isErrorBody(body)) {
+    // A rejected session invalidates the whole authenticated state, not just
+    // this request, so the auth layer is told before the error propagates.
+    if (response.status === 401 && SESSION_INVALID_CODES.has(body.error.code)) {
+      onUnauthorized();
+    }
+
     throw new ApiError({
       code: body.error.code,
       message: body.error.message,

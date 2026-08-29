@@ -42,3 +42,29 @@ export const getDatabaseClient = (): SetuxDatabaseClient => {
 
   return client;
 };
+
+/**
+ * Creates a short-lived, isolated Supabase client for a single auth operation.
+ *
+ * This exists because `signInWithPassword` **mutates the session of the client
+ * it is called on**. Calling it on the shared service-role client above would
+ * leave that client authenticated as the user who just signed in, so every
+ * later request — token verification, profile lookups, any repository query —
+ * would run with that user's identity instead of the service role. One user
+ * signing in would corrupt every other request in flight.
+ *
+ * Each call therefore gets its own client, which is discarded immediately. The
+ * client is created with the service-role key because it must reach the Auth
+ * endpoints, but it never persists or refreshes anything.
+ */
+export const createIsolatedAuthClient = (): SetuxDatabaseClient =>
+  createClient<Database, 'public'>(config.supabase.url, config.supabase.serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: { 'x-application-name': config.serviceName },
+    },
+  });

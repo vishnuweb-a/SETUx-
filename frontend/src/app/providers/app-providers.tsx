@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { ErrorBoundary } from '@/components/feedback/error-boundary';
+import { AuthProvider } from '@/features/auth';
 import { ApiError } from '@/services/api-client';
 
 /** Client errors (4xx) are the caller's fault; retrying them wastes a round trip. */
@@ -37,7 +38,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {/* Auth sits inside the query client so authenticated features can use
+            both, and inside the error boundary so a failure here is caught. */}
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
