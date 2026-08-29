@@ -1,0 +1,144 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * SetuX design tokens.
+ *
+ * Follows the four-step Tailwind v4 pattern from the `tailwind-v4-shadcn` skill:
+ *   1. variables at root level, hsl()-wrapped
+ *   2. @theme inline maps them to utilities
+ *   3. @layer base consumes them unwrapped
+ *   4. dark mode switches automatically
+ *
+ * Visual direction per AGENT.md §17: government technology, trustworthy,
+ * blue-focused, white surfaces, accessible contrast.
+ */
+
+:root {
+  --radius: 0.75rem;
+
+  --background: hsl(210 40% 98%);
+  --foreground: hsl(222 47% 11%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222 47% 11%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222 47% 11%);
+
+  /* SetuX government blue */
+  --primary: hsl(221 83% 45%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(214 32% 94%);
+  --secondary-foreground: hsl(222 47% 11%);
+
+  --muted: hsl(214 32% 94%);
+  --muted-foreground: hsl(215 16% 42%);
+
+  --accent: hsl(213 94% 95%);
+  --accent-foreground: hsl(221 83% 35%);
+
+  --destructive: hsl(0 72% 46%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --success: hsl(142 71% 33%);
+  --success-foreground: hsl(0 0% 100%);
+
+  --warning: hsl(38 92% 42%);
+  --warning-foreground: hsl(0 0% 100%);
+
+  --border: hsl(214 32% 88%);
+  --input: hsl(214 32% 88%);
+  --ring: hsl(221 83% 45%);
+}
+
+.dark {
+  --background: hsl(222 47% 8%);
+  --foreground: hsl(210 40% 96%);
+
+  --card: hsl(222 45% 12%);
+  --card-foreground: hsl(210 40% 96%);
+
+  --popover: hsl(222 45% 12%);
+  --popover-foreground: hsl(210 40% 96%);
+
+  --primary: hsl(217 91% 62%);
+  --primary-foreground: hsl(222 47% 10%);
+
+  --secondary: hsl(217 33% 18%);
+  --secondary-foreground: hsl(210 40% 96%);
+
+  --muted: hsl(217 33% 18%);
+  --muted-foreground: hsl(215 20% 68%);
+
+  --accent: hsl(217 33% 22%);
+  --accent-foreground: hsl(213 94% 82%);
+
+  --destructive: hsl(0 72% 58%);
+  --destructive-foreground: hsl(222 47% 10%);
+
+  --success: hsl(142 65% 48%);
+  --success-foreground: hsl(222 47% 10%);
+
+  --warning: hsl(38 92% 58%);
+  --warning-foreground: hsl(222 47% 10%);
+
+  --border: hsl(217 33% 22%);
+  --input: hsl(217 33% 22%);
+  --ring: hsl(217 91% 62%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
