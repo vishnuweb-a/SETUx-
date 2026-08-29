@@ -188,6 +188,10 @@ Lint passes
 Tests pass
 Build passes
 
+Status
+
+Complete. The foundation is documented in docs/DEVELOPMENT/foundation.md.
+
 Phase 2 — Supabase & Database Foundation
 
 Objective

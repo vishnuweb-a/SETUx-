@@ -9,7 +9,8 @@ import { config } from '../../config/index.js';
  * IDs must never be passed to the logger in the first place.
  */
 export const logger = pino({
-  level: config.logging.level,
+  // Tests assert on behaviour, not log output; silencing keeps runs readable.
+  level: config.isTest ? 'silent' : config.logging.level,
   base: { service: config.serviceName },
   redact: {
     paths: [

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { config } from '../config/index.js';
+import { HTTP_STATUS } from '../shared/constants/index.js';
 import { AppError, ERROR_CODES, ValidationError } from '../shared/errors/index.js';
 import { logger } from '../shared/logger/index.js';
 import { errorBody } from '../shared/utils/index.js';
@@ -48,7 +49,7 @@ export const errorHandler = (
     'Unhandled error while processing request',
   );
 
-  res.status(500).json(
+  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
     errorBody({
       code: ERROR_CODES.INTERNAL_ERROR,
       message: config.isProduction ? GENERIC_MESSAGE : String(err),
