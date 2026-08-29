@@ -729,94 +729,106 @@ The exact filenames/location can be adjusted to match the repository structure.
 
 16. Repository Structure
 
-Recommended project structure:
+Actual project structure:
 
 setux/
 │
-├── frontend/
+├── .agents/skills/          AI skill library (skill-first development)
+├── .github/workflows/       CI: lint, typecheck, test, build
 │
-├── backend/
+├── backend/                 Express + TypeScript API (npm workspace)
+│   ├── src/
+│   │   ├── config/          Centralized, validated configuration
+│   │   ├── middleware/      Request context, logging, rate limit, errors, 404
+│   │   ├── modules/         Feature modules (Phase 0: health only)
+│   │   ├── routes/          Versioned API router (/api/v1)
+│   │   ├── shared/          errors/ logger/ validation/ constants/ utils/
+│   │   ├── types/           Express augmentation and domain types
+│   │   ├── app.ts           Express application factory
+│   │   └── server.ts        Listener + graceful shutdown
+│   └── tests/               unit/ integration/
 │
-├── docs/
+├── frontend/                React + TypeScript + Vite (npm workspace)
+│   ├── src/
+│   │   ├── app/             router/ providers/ layouts/
+│   │   ├── components/      ui/ common/ feedback/
+│   │   ├── features/        Feature-based modules (added from Phase 3)
+│   │   ├── services/        API client and per-domain services
+│   │   ├── hooks/ lib/ stores/ schemas/ types/ utils/
+│   │   └── main.tsx
+│   └── index.html
 │
-├── database/
-│   ├── migrations/
-│   └── seed/
+├── mock-services/           Simulated external government systems
+│   ├── fake-digilocker/
+│   ├── fake-identity/
+│   ├── fake-education/
+│   └── fake-income/
 │
-├── mock-services/
+├── supabase/                migrations/ seed/ functions/
+├── scripts/                 verify-env.mjs, health-check.mjs
+├── docs/                    PRD, HLD, LLD, API, security, deployment
 │
+├── AGENT.md                 AI development contract
+├── CLAUDE.md                Claude operating instructions
 ├── .env.example
 ├── .gitignore
-└── README.md
+└── package.json             npm workspaces root
 
-Backend example:
+Backend modules follow a fixed contract:
 
-backend/
-│
-├── src/
-│   ├── modules/
-│   │   ├── auth/
-│   │   ├── onboarding/
-│   │   ├── applications/
-│   │   ├── consent/
-│   │   ├── scholarships/
-│   │   ├── workflow/
-│   │   ├── connectors/
-│   │   ├── notifications/
-│   │   └── audit/
-│   │
-│   ├── shared/
-│   │   ├── errors/
-│   │   ├── middleware/
-│   │   └── utils/
-│   │
-│   └── app.*
-│
-└── package.json
+module/
+├── module.routes.ts         HTTP wiring
+├── module.controller.ts     Request/response translation
+├── module.service.ts        Business logic
+├── module.repository.ts     Persistence
+├── module.schema.ts         Zod validation
+├── module.types.ts          Domain contracts
+└── index.ts
+
+Dependency direction:
+
+Route → Controller → Service → Repository/Connector → Database/Provider
 
 17. Getting Started
 
 Prerequisites
 
-Install the project's required runtime and package manager before starting.
-
-You will need access to:
-
-Node.js
-Package Manager
+Node.js >= 20.19 (Node 22 LTS recommended)
+npm >= 10 (npm workspaces are used)
 Git
-Supabase Project
+A Supabase project (required from Phase 2 onward; not needed to run Phase 0)
 
-Exact versions should be maintained in the repository configuration.
-
-Clone the Repository
+Clone and Install
 
 git clone <repository-url>
 cd setux
+npm install
+
+A single install at the root installs both workspaces. Do not run npm install
+inside backend/ or frontend/ separately.
 
 Configure Environment
 
-Create the required environment files from the example configuration:
+Copy the example files:
 
-cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 
-Then configure the required Supabase and application variables.
+Verify the result:
 
-Never commit the real .env file.
+node scripts/verify-env.mjs
 
-Install Dependencies
+Environment strategy
 
-For the backend:
+Two trust boundaries exist:
 
-cd backend
-npm install
+backend/.env    Server-only. May hold privileged secrets.
+frontend/.env   Shipped to the browser. Every VITE_* value is PUBLIC.
 
-For the frontend:
+SUPABASE_SERVICE_ROLE_KEY belongs only in backend/.env. It must never be given
+a VITE_ prefix and must never be referenced from frontend source code.
 
-cd frontend
-npm install
-
-Use the package manager and commands defined by the actual project configuration if they differ.
+Never commit a real .env file. Only .env.example is tracked.
 
 18. Database Setup
 
@@ -836,19 +848,46 @@ Ready
 
 The demo environment should use fictional data.
 
+Note: the database schema is created in Phase 2. The supabase/ directory
+currently contains only the migrations/, seed/ and functions/ boundaries.
+
 19. Running Locally
 
-Start the backend:
+Start both applications from the repository root:
 
-cd backend
 npm run dev
 
-Start the frontend:
+This runs the backend on http://localhost:3000 and the frontend on
+http://localhost:5173.
 
-cd frontend
-npm run dev
+Individually:
 
-The exact commands may vary depending on the framework configuration.
+npm run dev:backend
+npm run dev:frontend
+
+Verify the backend:
+
+curl http://localhost:3000/api/v1/health
+node scripts/health-check.mjs
+
+Expected response:
+
+{
+  "success": true,
+  "data": {
+    "service": "setux-backend",
+    "status": "healthy"
+  },
+  "message": "Service is healthy"
+}
+
+Quality gates (run from the root, across both workspaces):
+
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+
 
 20. Demo Roles
 
@@ -1116,6 +1155,17 @@ Architecture: Modular Monolith
 Database/Auth: Supabase
 Integrations: Fake Government Connectors
 Primary Use Case: Scholarship Workflow
+
+Current phase: Phase 0 complete — repository architecture and the frontend/backend
+engineering foundation are established and validated. No application features are
+implemented yet. See docs/PHASES/phase.md for the full phase plan.
+
+Prototype disclaimer
+
+External government systems are simulated for the SIH prototype. No real
+government API integration is assumed unless explicitly documented. All data
+used in this repository is synthetic; no real citizen or government records are
+present or supported.
 
 32. Final Architecture Summary
 
