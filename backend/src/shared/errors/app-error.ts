@@ -50,3 +50,24 @@ export class NotFoundError extends AppError {
     });
   }
 }
+
+/** The caller is not authenticated, or the credential supplied is not valid. */
+export class UnauthenticatedError extends AppError {
+  constructor(message = 'Authentication is required.') {
+    super({ statusCode: 401, code: ERROR_CODES.UNAUTHENTICATED, message });
+  }
+}
+
+/** The caller is authenticated but not permitted to perform this action. */
+export class ForbiddenError extends AppError {
+  constructor(message = 'You do not have permission to perform this action.') {
+    super({ statusCode: 403, code: ERROR_CODES.FORBIDDEN, message });
+  }
+}
+
+/** The request conflicts with the current state of the resource. */
+export class ConflictError extends AppError {
+  constructor(message = 'The request conflicts with the current state.') {
+    super({ statusCode: 409, code: ERROR_CODES.CONFLICT, message });
+  }
+}

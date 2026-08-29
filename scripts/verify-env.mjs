@@ -23,12 +23,58 @@ for (const [target, example] of required) {
   }
 }
 
-// A service-role key is privileged and must never be exposed to the browser.
+/** Returns the decoded payload of a JWT, or null if the value is not one. */
+function decodeJwtPayload(value) {
+  const segments = value.split('.');
+  if (segments.length !== 3) return null;
+
+  try {
+    return JSON.parse(Buffer.from(segments[1], 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Parses `KEY=value` lines, skipping blanks and comments. */
+function readAssignments(path) {
+  return readFileSync(path, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'))
+    .map((line) => {
+      const separator = line.indexOf('=');
+      if (separator === -1) return null;
+      return { name: line.slice(0, separator).trim(), value: line.slice(separator + 1).trim() };
+    })
+    .filter((entry) => entry !== null && entry.value.length > 0);
+}
+
+/*
+ * A service-role key is privileged and must never reach the browser.
+ *
+ * Only real assignments are inspected, so the warning comment carried over
+ * from .env.example does not trip the check. Both the variable name and its
+ * value are examined, because a leaked key is just as dangerous under an
+ * innocuous name.
+ */
 const frontendEnv = join(root, 'frontend/.env');
 if (existsSync(frontendEnv)) {
-  const contents = readFileSync(frontendEnv, 'utf8');
-  if (/SERVICE_ROLE/i.test(contents)) {
-    problems.push('frontend/.env references a SERVICE_ROLE key. Remove it — it must stay server-side.');
+  for (const { name, value } of readAssignments(frontendEnv)) {
+    if (/SERVICE_ROLE/i.test(name)) {
+      problems.push(
+        `frontend/.env assigns ${name}. Remove it — a service-role key must stay server-side.`,
+      );
+      continue;
+    }
+
+    // A Supabase JWT carries its role in the payload; anon is the only role
+    // that may ship to a browser.
+    const payload = decodeJwtPayload(value);
+    if (payload?.role !== undefined && payload.role !== 'anon') {
+      problems.push(
+        `frontend/.env sets ${name} to a token with role "${payload.role}". Only an anon key may reach the browser.`,
+      );
+    }
   }
 }
 

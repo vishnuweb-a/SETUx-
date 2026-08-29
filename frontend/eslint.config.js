@@ -26,4 +26,11 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Vendored shadcn/ui primitives follow upstream's convention of exporting
+    // their `cva` variants next to the component. Kept verbatim so the files
+    // stay updatable from the registry.
+    files: ['src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 );
