@@ -14,6 +14,18 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+
+  /**
+   * Supabase project URL and privileged server key.
+   *
+   * The service-role key bypasses Row Level Security, so it exists only here in
+   * the backend: it must never be given a VITE_ prefix, reach frontend source,
+   * be logged, or be returned from an API (docs/SECURITY/security-design.md §20).
+   */
+  SUPABASE_URL: z.url({ error: 'SUPABASE_URL must be a valid URL.' }),
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .min(1, { error: 'SUPABASE_SERVICE_ROLE_KEY is required.' }),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -27,6 +27,17 @@ export const config = {
     level: env.LOG_LEVEL,
   },
 
+  /**
+   * Server-side Supabase credentials.
+   *
+   * `serviceRoleKey` bypasses RLS. Nothing may log it, echo it in a response, or
+   * copy it into a frontend-visible variable.
+   */
+  supabase: {
+    url: env.SUPABASE_URL,
+    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+  },
+
   rateLimit: {
     windowMs: 15 * 60 * 1000,
     max: 100,

@@ -236,6 +236,10 @@ Seed data can be loaded
 
 Backend can securely access required data
 
+Status
+
+Complete. The implementation is documented in docs/DATABASE/database-setup.md.
+
 Phase 3 — Authentication & RBAC
 
 Objective
@@ -1156,7 +1160,7 @@ Development Foundation
 
 Supabase & Database
 
-⬜
+✅
 
 3
 

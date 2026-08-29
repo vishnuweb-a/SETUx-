@@ -1,6 +1,13 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../src/app.js';
+
+// These tests assert middleware behaviour, not health semantics. The health
+// route is simply the most convenient endpoint to exercise, so its database
+// probe is stubbed to keep the suite independent of any live project.
+vi.mock('../../src/modules/health/health.repository.js', () => ({
+  pingDatabase: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('security middleware', () => {
   const app = createApp();
