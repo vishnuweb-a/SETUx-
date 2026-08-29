@@ -848,8 +848,10 @@ Ready
 
 The demo environment should use fictional data.
 
-Note: the database schema is created in Phase 2. The supabase/ directory
-currently contains only the migrations/, seed/ and functions/ boundaries.
+The schema is in place as of Phase 2: 17 tables with Row Level Security enabled
+on every one, plus synthetic reference seed data. See
+docs/DATABASE/database-setup.md for the schema, the RLS access model and the
+migration workflow.
 
 19. Running Locally
 
