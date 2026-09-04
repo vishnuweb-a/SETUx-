@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
+import { CitizenLayout } from '@/app/layouts/citizen-layout';
 import { RootLayout } from '@/app/layouts/root-layout';
 import { FoundationPage } from '@/app/pages/foundation-page';
 import { NotFoundPage } from '@/components/feedback/not-found-page';
@@ -17,6 +18,7 @@ import {
   RequireIncompleteOnboarding,
   RequireOnboarding,
 } from '@/features/onboarding';
+import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scholarships';
 import { HomeRedirect } from '@/app/pages/home-redirect';
 
 /**
@@ -81,6 +83,39 @@ export const router = createBrowserRouter([
     ],
   },
 
+  // The signed-in citizen area.
+  //
+  // Phase 5 gives the citizen a shell of its own — the sidebar and header from
+  // the reference screens — so this branch sits beside `RootLayout` rather than
+  // inside it. Nesting the two would render both chromes at once (Phase 5 §29).
+  //
+  // The guards are unchanged from Phase 4 and still apply in the same order:
+  // session and role first, completed onboarding second, so a half-onboarded
+  // citizen is returned to their form rather than reaching the catalogue
+  // (Phase 5 §20).
+  {
+    element: <ProtectedRoute allowedRoles={[USER_ROLES.CITIZEN]} />,
+    errorElement: <NotFoundPage />,
+    children: [
+      {
+        element: <RequireOnboarding />,
+        children: [
+          {
+            element: <CitizenLayout />,
+            children: [
+              { path: '/citizen', element: <CitizenDashboardPage /> },
+              { path: '/citizen/services', element: <ScholarshipCataloguePage /> },
+              {
+                path: '/citizen/services/:scholarshipId',
+                element: <ScholarshipDetailPage />,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
   {
     path: '/',
     element: <RootLayout />,
@@ -91,15 +126,6 @@ export const router = createBrowserRouter([
 
       // Dashboards require a completed profile, so a user cannot skip
       // onboarding by typing the dashboard URL (Phase 4 §39).
-      {
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.CITIZEN]} />,
-        children: [
-          {
-            element: <RequireOnboarding />,
-            children: [{ path: 'citizen', element: <CitizenDashboardPage /> }],
-          },
-        ],
-      },
       {
         element: <ProtectedRoute allowedRoles={[USER_ROLES.GOVERNMENT_OFFICER]} />,
         children: [

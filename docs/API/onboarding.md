@@ -376,7 +376,7 @@ Return dashboard routing information
   "data": {
     "onboarding_status": "COMPLETED",
     "role": "CITIZEN",
-    "redirect": "/citizen/dashboard"
+    "redirect": "/citizen"
   }
 }
 
@@ -561,7 +561,7 @@ Government Dashboard
   "data": {
     "onboarding_status": "COMPLETED",
     "role": "GOVERNMENT_OFFICER",
-    "redirect": "/government/dashboard"
+    "redirect": "/government"
   }
 }
 

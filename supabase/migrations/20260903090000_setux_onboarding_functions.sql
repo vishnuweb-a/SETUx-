@@ -19,6 +19,21 @@
 -- No table, column, constraint, index, enum or policy from Phase 2 is altered.
 -- These functions only write through the schema that already exists.
 --
+-- Why the backend keeps a fallback (Phase 4 finalization decision)
+-- ----------------------------------------------------------------
+-- The fallback below is retained deliberately, not left behind by oversight.
+-- It fires only on PGRST202 ("function not found"), which means exactly one
+-- thing: this migration has not been applied to the target project. A fresh
+-- environment is in that state between `supabase db push` steps, and failing
+-- the whole onboarding flow there would be worse than completing it in two
+-- ordered writes.
+--
+-- The degradation is NOT silent, which is the property that makes keeping it
+-- safe: every fallback write emits a `logger.warn` naming this migration, so a
+-- deployment missing it is visible in the logs rather than quietly non-atomic.
+-- Any error that is not PGRST202 is rethrown untouched — the fallback never
+-- masks a genuine database failure.
+--
 -- Until this migration is applied
 -- -------------------------------
 -- `backend/src/modules/onboarding/onboarding.repository.ts` calls these
