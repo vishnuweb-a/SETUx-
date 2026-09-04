@@ -65,6 +65,7 @@ history. Never change schema through the dashboard alone.
 | 4 | `20260829090300_setux_applications.sql` | `applications` + the 8 application-scoped tables, application-number generator |
 | 5 | `20260829090400_setux_rls.sql` | `private` helper schema, RLS enablement, 35 policies |
 | 6 | `20260903090000_setux_onboarding_functions.sql` | Phase 4: `complete_citizen_onboarding()`, `complete_government_onboarding()` — atomic onboarding completion. Must be applied like any other migration when setting up an environment; the backend falls back to two ordered writes if it is absent. |
+| 7 | `20260904090000_setux_application_management.sql` | Phase 6: one-active-application uniqueness and service-role-only atomic create/save/submit functions. Required by the application API. |
 
 They are ordered by foreign-key dependency and apply cleanly to an empty
 database in filename order.

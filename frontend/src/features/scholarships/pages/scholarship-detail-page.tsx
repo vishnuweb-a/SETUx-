@@ -1,6 +1,5 @@
-import { ArrowLeft, Building2, ChevronRight, GraduationCap, Info, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, Building2, ChevronRight, GraduationCap, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { RequirementList } from '../components/requirement-list';
+import { useCreateApplication } from '@/features/applications';
+import { applicationErrorMessage } from '@/features/applications/utils/application-error';
 import { useScholarship } from '../hooks/use-scholarships';
 import {
   isInvalidScholarshipId,
@@ -24,10 +25,8 @@ const CATALOGUE_PATH = '/citizen/services';
  * substance in a wide left column, and a summary card in a right rail that
  * carries the primary action.
  *
- * The Apply control is the phase boundary. It is rendered because the reference
- * shows it and because a catalogue whose entries cannot be acted on reads as
- * broken — but it creates nothing. Application creation, consent, document
- * retrieval and verification are Phase 6 and later (Phase 5 §18, §33).
+ * The Apply control starts a Phase 6 draft through the application API. It does
+ * not grant consent or start retrieval/verification work.
  */
 export function ScholarshipDetailPage() {
   const { scholarshipId = '' } = useParams<{ scholarshipId: string }>();
@@ -105,7 +104,7 @@ export function ScholarshipDetailPage() {
           </section>
         </div>
 
-        <ApplyPanel scholarshipName={name} department={department} />
+        <ApplyPanel scholarshipId={scholarship.data.id} scholarshipName={name} department={department} />
       </div>
     </div>
   );
@@ -120,13 +119,17 @@ export function ScholarshipDetailPage() {
  * actually knows (AGENT.md §21, Phase 5 §26).
  */
 function ApplyPanel({
+  scholarshipId,
   scholarshipName,
   department,
 }: {
+  readonly scholarshipId: string;
   readonly scholarshipName: string;
   readonly department: string;
 }) {
-  const [isNoticeVisible, setIsNoticeVisible] = useState(false);
+  const navigate = useNavigate();
+  const create = useCreateApplication();
+  const handleApply = () => create.mutate(scholarshipId, { onSuccess: (application) => void navigate(`/citizen/applications/${application.id}`) });
 
   return (
     <aside className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-24">
@@ -159,23 +162,12 @@ function ApplyPanel({
         </div>
       </dl>
 
-      <Button className="w-full" onClick={() => setIsNoticeVisible(true)}>
-        Apply now
+      <Button className="w-full" onClick={handleApply} disabled={create.isPending}>
+        {create.isPending ? 'Starting application…' : 'Apply now'}
         <ChevronRight className="size-4" aria-hidden />
       </Button>
 
-      {/* The honest answer to a press: applications are not built yet. The
-          notice must never read as a submitted application, because none was
-          created — nothing on this screen writes anything (Phase 5 §33). */}
-      {isNoticeVisible && (
-        <Alert role="status">
-          <Info aria-hidden />
-          <AlertDescription>
-            Applications open in the next step of the SetuX workflow. Nothing has been submitted
-            and no application has been created.
-          </AlertDescription>
-        </Alert>
-      )}
+      {create.isError && <Alert variant="destructive" role="alert"><AlertDescription>{applicationErrorMessage(create.error)}</AlertDescription></Alert>}
 
       <p className="text-xs text-muted-foreground">
         You can review everything this scholarship requires before you apply.

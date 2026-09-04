@@ -21,8 +21,8 @@ SetuX Backend
 
 ## Status
 
-**Phase 4 complete.** 17 tables, 9 enums, RLS enabled on every table with 35
-policies, and synthetic reference seed data.
+**Phase 6 implemented.** 17 tables, 9 enums, RLS enabled on every table with 35
+policies, synthetic reference data, and atomic application operations.
 
 Phase 4 (onboarding) reuses this schema unchanged — no table, column,
 constraint, index, enum or policy was added or altered. It contributes one
@@ -43,6 +43,12 @@ Migrations apply in filename order:
 | 4 | `20260829090300_setux_applications.sql` |
 | 5 | `20260829090400_setux_rls.sql` |
 | 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
+| 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
+
+The Phase 6 migration enforces one active application per citizen/service and
+adds service-role-only functions for atomic create, draft replacement, and
+submit operations. Apply it before using the application endpoints; the backend
+does not fall back to partial multi-statement writes.
 
 Full documentation — schema, relationships, the RLS access model, environment
 setup and validation commands — is in

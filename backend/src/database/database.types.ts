@@ -656,6 +656,18 @@ export type Database = {
         };
         Returns: undefined;
       };
+      create_citizen_application: {
+        Args: { p_citizen_id: string; p_service_id: string };
+        Returns: Database['public']['Tables']['applications']['Row'][];
+      };
+      save_citizen_application_draft: {
+        Args: { p_application_id: string; p_citizen_id: string; p_fields: Json };
+        Returns: undefined;
+      };
+      submit_citizen_application: {
+        Args: { p_application_id: string; p_citizen_id: string };
+        Returns: Database['public']['Tables']['applications']['Row'][];
+      };
     };
     Enums: {
       user_role: 'CITIZEN' | 'GOVERNMENT_OFFICER';

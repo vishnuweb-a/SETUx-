@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authRouter } from '../modules/auth/index.js';
+import { applicationsRouter } from '../modules/applications/index.js';
 import { citizenRouter } from '../modules/citizen/index.js';
 import { governmentRouter } from '../modules/government/index.js';
 import { healthRouter } from '../modules/health/index.js';
@@ -17,6 +18,7 @@ export const apiRouter = Router();
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/onboarding', onboardingRouter);
+apiRouter.use('/applications', applicationsRouter);
 apiRouter.use('/services', servicesRouter);
 apiRouter.use('/citizen', citizenRouter);
 apiRouter.use('/government', governmentRouter);

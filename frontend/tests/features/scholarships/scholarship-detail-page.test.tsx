@@ -8,8 +8,8 @@ import { ApiError } from '@/services/api-client';
 /**
  * The Phase 5 detail screen.
  *
- * The most important assertion in this file is the last one: pressing Apply
- * must not create an application. Phase 5 ends at presentation (§18, §33, §46).
+ * Phase 6 turns the previously presentational Apply control into a real draft
+ * creation flow while preserving the catalogue's read-only API.
  */
 
 vi.mock('@/features/scholarships/services/scholarship-service', () => ({
@@ -18,6 +18,13 @@ vi.mock('@/features/scholarships/services/scholarship-service', () => ({
   fetchScholarship: vi.fn(),
   fetchScholarshipRequirements: vi.fn(),
 }));
+vi.mock('@/features/applications/services/application-service', () => ({
+  createApplication: vi.fn(),
+  fetchApplications: vi.fn(),
+  fetchApplication: vi.fn(),
+  saveApplicationDraft: vi.fn(),
+  submitApplication: vi.fn(),
+}));
 
 const scholarshipService = await import('@/features/scholarships/services/scholarship-service');
 const { ScholarshipDetailPage } = await import(
@@ -25,6 +32,8 @@ const { ScholarshipDetailPage } = await import(
 );
 
 const fetchScholarshipMock = vi.mocked(scholarshipService.fetchScholarship);
+const applicationService = await import('@/features/applications/services/application-service');
+const createApplicationMock = vi.mocked(applicationService.createApplication);
 
 const SCHOLARSHIP_ID = 'a1111111-1111-4111-8111-111111111111';
 
@@ -67,6 +76,7 @@ const renderDetail = (id = SCHOLARSHIP_ID) => {
         <Routes>
           <Route path="/citizen/services" element={<p>Catalogue</p>} />
           <Route path="/citizen/services/:scholarshipId" element={<ScholarshipDetailPage />} />
+          <Route path="/citizen/applications/:applicationId" element={<p>Application form</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -76,6 +86,7 @@ const renderDetail = (id = SCHOLARSHIP_ID) => {
 beforeEach(() => {
   vi.clearAllMocks();
   fetchScholarshipMock.mockResolvedValue(DETAIL);
+  createApplicationMock.mockResolvedValue({ id: 'application-1' } as never);
 });
 
 describe('detail rendering', () => {
@@ -200,31 +211,21 @@ describe('apply CTA', () => {
     expect(await screen.findByRole('button', { name: /apply now/i })).toBeInTheDocument();
   });
 
-  it('creates no application when pressed', async () => {
+  it('creates a draft for the selected service when pressed', async () => {
     const user = userEvent.setup();
     renderDetail();
 
     await user.click(await screen.findByRole('button', { name: /apply now/i }));
 
-    // The catalogue service is the feature's entire API surface, and all four
-    // of its calls are reads. None of them is a create.
-    expect(scholarshipService.fetchScholarships).not.toHaveBeenCalled();
-    for (const mock of Object.values(scholarshipService)) {
-      const calls = vi.mocked(mock).mock.calls;
-      for (const [, options] of calls) {
-        expect(options).not.toMatchObject({ method: expect.anything() });
-      }
-    }
+    expect(createApplicationMock.mock.calls[0]?.[0]).toBe(SCHOLARSHIP_ID);
   });
 
-  it('says applications are not open yet rather than claiming a submission', async () => {
+  it('opens the application form after draft creation', async () => {
     const user = userEvent.setup();
     renderDetail();
 
     await user.click(await screen.findByRole('button', { name: /apply now/i }));
 
-    const notice = await screen.findByRole('status');
-    expect(notice).toHaveTextContent(/no application has been created/i);
-    expect(notice).not.toHaveTextContent(/application submitted/i);
+    expect(await screen.findByText('Application form')).toBeInTheDocument();
   });
 });

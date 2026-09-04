@@ -20,6 +20,7 @@ import {
 } from '@/features/onboarding';
 import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scholarships';
 import { HomeRedirect } from '@/app/pages/home-redirect';
+import { ApplicationDetailPage, ApplicationListPage } from '@/features/applications';
 
 /**
  * Application routes.
@@ -105,6 +106,8 @@ export const router = createBrowserRouter([
             children: [
               { path: '/citizen', element: <CitizenDashboardPage /> },
               { path: '/citizen/services', element: <ScholarshipCataloguePage /> },
+              { path: '/citizen/applications', element: <ApplicationListPage /> },
+              { path: '/citizen/applications/:applicationId', element: <ApplicationDetailPage /> },
               {
                 path: '/citizen/services/:scholarshipId',
                 element: <ScholarshipDetailPage />,
