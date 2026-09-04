@@ -44,11 +44,23 @@ Migrations apply in filename order:
 | 5 | `20260829090400_setux_rls.sql` |
 | 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
 | 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
+| 8 | `20260904120000_setux_consent_management.sql` (Phase 7) |
 
 The Phase 6 migration enforces one active application per citizen/service and
 adds service-role-only functions for atomic create, draft replacement, and
 submit operations. Apply it before using the application endpoints; the backend
 does not fall back to partial multi-statement writes.
+
+The Phase 7 migration adds `consents.decided_at` (nullable, so existing rows
+stay valid) with a CHECK tying it to a GRANTED or DENIED status, plus two
+service-role-only functions: `prepare_application_consents`, which derives the
+consent requests for a submitted application idempotently, and
+`decide_application_consent`, which records one decision and its
+`application_events` entry in a single statement. Both are `security invoker`
+with an empty `search_path`, and neither is executable by `anon` or
+`authenticated` — consent decisions are reached only through the backend, which
+resolves the citizen identity server-side. The `consents` RLS policies are
+unchanged from Phase 2.
 
 Full documentation — schema, relationships, the RLS access model, environment
 setup and validation commands — is in

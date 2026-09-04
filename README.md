@@ -853,21 +853,25 @@ on every one, plus synthetic reference seed data. See
 docs/DATABASE/database-setup.md for the schema, the RLS access model and the
 migration workflow.
 
-Outstanding migration (Phase 4)
+Migration history
 
-Phase 4 adds no table, column, constraint or policy — it reuses the Phase 2
-schema. It does add one migration containing two PostgreSQL functions that make
-onboarding completion atomic:
+All migrations through Phase 7 are applied to the linked Supabase project. Local
+and remote history match:
 
-supabase/migrations/20260903090000_setux_onboarding_functions.sql
+| # | Migration |
+|---|-----------|
+| 1-5 | Phase 2 — enums, identity, catalogue, applications, RLS |
+| 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
+| 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
+| 8 | `20260904120000_setux_consent_management.sql` (Phase 7) |
 
-This migration has NOT yet been applied to the shared Supabase project, because
-this environment has no linked Supabase CLI and no direct database access.
-Onboarding works without it: the backend detects the missing functions and falls
-back to two ordered writes (profile row first, completion flag second), which is
-recoverable but not atomic. Apply the migration to close that window — the
-backend then uses the functions automatically, with no code change. Instructions
-are in the migration's own header comment.
+Phases 4, 6 and 7 add no new table — each reuses the Phase 2 schema and adds
+only PostgreSQL functions that make a multi-row operation atomic. Phase 7 also
+adds one nullable column, `consents.decided_at`, so a DENIED consent can record
+when the citizen decided without relying on `updated_at`.
+
+Schema changes go through migrations, never manual dashboard edits: to change
+something, add a new migration; never edit an applied one.
 
 19. Running Locally
 
@@ -1174,7 +1178,7 @@ Database/Auth: Supabase
 Integrations: Fake Government Connectors
 Primary Use Case: Scholarship Workflow
 
-Current phase: Phase 6 implemented — application management.
+Current phase: Phase 7 implemented — consent management.
 
 Phase 0  Repository architecture and engineering foundation
 Phase 1  Frontend/backend foundation, health endpoint, logging, security middleware
@@ -1182,7 +1186,7 @@ Phase 2  Supabase schema: 17 tables, 9 enums, Row Level Security on every table
 Phase 3  Authentication and RBAC (Supabase Auth, server-side role resolution)
 Phase 4  Citizen and government officer onboarding
 
-Phases 0–6 are implemented through application management. Phase 7 onward is
+Phases 0–7 are implemented through consent management. Phase 8 onward is
 not implemented. See docs/PHASES/phase.md for the full phase plan.
 
 Phase 4 adds the first authenticated business vertical slice:
@@ -1224,19 +1228,41 @@ ever exposed, enforced in the query rather than by filtering afterwards.
 The Apply control now creates a server-owned DRAFT and opens the citizen's
 application screen. Citizens can save configured declaration fields, list and
 reopen their applications, and explicitly submit a draft. Submitted records are
-read-only. Phase 6 creates no consent, retrieval, verification, review, audit,
-or notification records. See docs/API/application.md for the API contract.
+read-only. Phase 6 creates no retrieval, verification, review or notification
+records. See docs/API/application.md for the API contract.
+
+Consent management
+
+A submitted application that needs information from another government system
+asks the citizen for permission before anything is requested. The citizen sees
+what is being requested, from which simulated system, for what purpose, and who
+receives it — then explicitly allows or denies each item.
+
+Submitted application
+  ↓
+Consent requests derived from the service's configured requirements
+  ↓
+/citizen/applications/:applicationId/consent
+  ↓
+Allow or Deny, per item
+  ↓
+Decision persisted and recorded in application_events
+
+Consent is never inferred: not from submitting, not from opening the consent
+page, not from authentication. Only an explicit Allow grants it, and a citizen
+declaration — which they type themselves — needs no consent at all.
+
+Phase 7 establishes the boundary but does not cross it. It performs no
+DigiLocker retrieval, calls no connector, runs no verification, creates no
+review, and does not advance the application beyond SUBMITTED. The rule it
+leaves for Phase 8 is: no protected external data retrieval without a granted
+consent for that application and that data source. See docs/API/consent.md.
 
 Citizen application routes:
 
 /citizen/applications
 /citizen/applications/:applicationId
-
-The migration `20260904090000_setux_application_management.sql` must be applied
-after the existing Phase 2–5 migrations. It adds the active-application
-uniqueness invariant and the atomic Phase 6 database functions.
-
-One migration is outstanding — see "Database Setup" below.
+/citizen/applications/:applicationId/consent
 
 Prototype disclaimer
 

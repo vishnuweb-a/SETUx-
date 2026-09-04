@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { applicationConsentsRoute } from '../consents/index.js';
 import { requireAuth, requireRole } from '../../middleware/index.js';
 import { USER_ROLES } from '../auth/auth.types.js';
 import { asyncHandler } from '../../shared/utils/index.js';
@@ -13,3 +14,6 @@ applicationsRouter.post('/', validateRequest({ body: createApplicationBodySchema
 applicationsRouter.get('/:applicationId', validateRequest({ params: applicationIdParamsSchema }), asyncHandler(handleGetApplication));
 applicationsRouter.patch('/:applicationId', validateRequest({ params: applicationIdParamsSchema, body: updateApplicationBodySchema }), asyncHandler(handleUpdateApplication));
 applicationsRouter.post('/:applicationId/submit', validateRequest({ params: applicationIdParamsSchema, body: submitApplicationBodySchema }), asyncHandler(handleSubmitApplication));
+// Phase 7 — the consent requests belonging to one application. Nested here so
+// it inherits this router's citizen authentication and role gate.
+applicationsRouter.use('/:applicationId/consents', applicationConsentsRoute);

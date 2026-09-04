@@ -511,6 +511,31 @@ No protected data connector call occurs without valid consent
 
 Consent state can be audited
 
+Phase 7 implementation profile (2026-09-04) — IMPLEMENTED
+
+Implemented surface:
+
+GET  /api/v1/applications/:applicationId/consents
+POST /api/v1/consents/:consentId/grant
+POST /api/v1/consents/:consentId/deny
+/citizen/applications/:applicationId/consent
+
+Consent requests are derived from `service_requirements` rows naming a
+`data_source_id`; citizen DECLARATION requirements need no consent. Decisions
+are explicit per item, final for the application, guarded against concurrent or
+repeated decisions in SQL, and recorded as CONSENT_GRANTED / CONSENT_DENIED
+events in `application_events`.
+
+Deliberately NOT implemented in Phase 7: revocation (REVOKED and EXPIRED remain
+unused schema values), DigiLocker retrieval, government connectors,
+verification, officer review, notifications. Phase 7 does not advance the
+application beyond SUBMITTED — "Support revocation where required" and "Enforce
+consent before protected connector calls" above are satisfied by establishing
+the boundary; the enforcement point itself belongs to the phase that first
+performs a retrieval.
+
+See docs/API/consent.md for the contract.
+
 Phase 8 — Fake DigiLocker Integration
 
 Objective
