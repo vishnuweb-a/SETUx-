@@ -47,6 +47,18 @@ export const ERROR_CODES = {
   APPLICATION_NOT_READY: 'APPLICATION_NOT_READY',
   APPLICATION_ALREADY_SUBMITTED: 'APPLICATION_ALREADY_SUBMITTED',
 
+  /**
+   * Consent codes — Phase 7, `docs/API/consent.md`.
+   *
+   * `CONSENT_NOT_APPLICABLE` covers an application that is not at the consent
+   * step; `CONSENT_ALREADY_DECIDED` covers a second decision on a consent the
+   * citizen has already granted or denied. Neither reveals anything about
+   * resources belonging to someone else — those are concealed as 404s.
+   */
+  CONSENT_NOT_APPLICABLE: 'CONSENT_NOT_APPLICABLE',
+  CONSENT_ALREADY_DECIDED: 'CONSENT_ALREADY_DECIDED',
+  CONSENT_ONBOARDING_REQUIRED: 'CONSENT_ONBOARDING_REQUIRED',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',

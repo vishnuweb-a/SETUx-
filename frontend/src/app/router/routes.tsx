@@ -21,6 +21,7 @@ import {
 import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scholarships';
 import { HomeRedirect } from '@/app/pages/home-redirect';
 import { ApplicationDetailPage, ApplicationListPage } from '@/features/applications';
+import { ConsentPage } from '@/features/consents';
 
 /**
  * Application routes.
@@ -108,6 +109,13 @@ export const router = createBrowserRouter([
               { path: '/citizen/services', element: <ScholarshipCataloguePage /> },
               { path: '/citizen/applications', element: <ApplicationListPage /> },
               { path: '/citizen/applications/:applicationId', element: <ApplicationDetailPage /> },
+              // Phase 7 — the consent request belongs to one application, so it
+              // nests under it and inherits the same session, role and
+              // onboarding guards.
+              {
+                path: '/citizen/applications/:applicationId/consent',
+                element: <ConsentPage />,
+              },
               {
                 path: '/citizen/services/:scholarshipId',
                 element: <ScholarshipDetailPage />,

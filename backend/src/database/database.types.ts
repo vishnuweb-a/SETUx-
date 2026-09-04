@@ -335,6 +335,7 @@ export type Database = {
           version: string;
           granted_at: string | null;
           revoked_at: string | null;
+          decided_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -348,6 +349,7 @@ export type Database = {
           version?: string;
           granted_at?: string | null;
           revoked_at?: string | null;
+          decided_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -361,6 +363,7 @@ export type Database = {
           version?: string;
           granted_at?: string | null;
           revoked_at?: string | null;
+          decided_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -667,6 +670,14 @@ export type Database = {
       submit_citizen_application: {
         Args: { p_application_id: string; p_citizen_id: string };
         Returns: Database['public']['Tables']['applications']['Row'][];
+      };
+      prepare_application_consents: {
+        Args: { p_application_id: string; p_citizen_id: string };
+        Returns: Database['public']['Tables']['consents']['Row'][];
+      };
+      decide_application_consent: {
+        Args: { p_consent_id: string; p_citizen_id: string; p_granted: boolean };
+        Returns: Database['public']['Tables']['consents']['Row'][];
       };
     };
     Enums: {

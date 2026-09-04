@@ -231,11 +231,15 @@ function CitizenHeader({ onOpenNav }: { readonly onOpenNav: () => void }) {
  * falling through to the dashboard.
  */
 const sectionTitleFor = (pathname: string): string =>
-  pathname.startsWith('/citizen/applications')
-    ? 'My Applications'
-    : pathname.startsWith('/citizen/services')
-      ? 'Scholarships'
-      : 'Dashboard';
+  // Consent first: it is nested under an application, so the broader
+  // `/citizen/applications` test would otherwise swallow it.
+  pathname.endsWith('/consent')
+    ? 'Review and Grant Consent'
+    : pathname.startsWith('/citizen/applications')
+      ? 'My Applications'
+      : pathname.startsWith('/citizen/services')
+        ? 'Scholarships'
+        : 'Dashboard';
 
 /**
  * Who is signed in, and the way out.

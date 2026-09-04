@@ -1,10 +1,11 @@
-import { ArrowLeft, CheckCircle2, FileText, GraduationCap, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, GraduationCap, ShieldCheck, ShieldQuestion } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useBlocker, useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/feedback/error-state';
+import { useApplicationConsents } from '@/features/consents';
 import { useApplication, useSaveApplication, useSubmitApplication } from '../hooks/use-applications';
 import { applicationErrorMessage } from '../utils/application-error';
 import { ApplicationStatusBadge } from '../components/application-status-badge';
@@ -64,7 +65,7 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
 
   return <div className="mx-auto flex max-w-6xl flex-col gap-5">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><Link to="/citizen/applications" className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="size-4" aria-hidden />My Applications</Link><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Apply for {application.service.name}</h1><p className="mt-1 text-sm text-muted-foreground">{application.applicationNumber}</p></div><ApplicationStatusBadge status={application.status} /></header>
-    {application.status === 'SUBMITTED' && <Alert><CheckCircle2 aria-hidden /><AlertDescription>Your application was submitted successfully and is now read-only. Consent and verification begin in later SetuX steps.</AlertDescription></Alert>}
+    {application.status === 'SUBMITTED' && <SubmittedApplicationNotice applicationId={application.id} />}
     <form onSubmit={handleSubmit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/25 bg-accent p-4"><ShieldCheck className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden /><div><h2 className="font-semibold">Your verified profile information is pre-filled</h2><p className="mt-1 text-sm text-muted-foreground">These details come from your completed SetuX profile and cannot be changed from this application.</p></div></div>
@@ -76,6 +77,41 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
       <aside className="rounded-2xl border border-border bg-card lg:sticky lg:top-24"><div className="flex items-center gap-3 border-b border-border p-5"><span className="grid size-10 place-items-center rounded-xl bg-accent text-primary"><GraduationCap className="size-5" aria-hidden /></span><h2 className="font-semibold">Scholarship details</h2></div><dl className="grid gap-4 p-5 text-sm"><div><dt className="text-muted-foreground">Scholarship name</dt><dd className="mt-1 font-medium">{application.service.name}</dd></div><div><dt className="text-muted-foreground">Offered by</dt><dd className="mt-1 font-medium">{application.service.department}</dd></div><div><dt className="text-muted-foreground">Requirements</dt><dd className="mt-2"><ul className="grid gap-2">{application.requirements.map((requirement) => <li key={requirement.id} className="flex gap-2"><FileText className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /><span>{requirement.name}{!requirement.required && ' (optional)'}</span></li>)}</ul></dd></div></dl></aside>
     </form>
   </div>;
+}
+
+/**
+ * What a submitted application now needs from the citizen.
+ *
+ * The next action is derived from the real consent state rather than assumed
+ * from the application status: a service whose requirements are all citizen
+ * declarations asks for no consent at all, and telling that citizen to go and
+ * consent would send them to a page with nothing on it (Phase 7 §31).
+ *
+ * While the consent query is still resolving, the notice says only what is
+ * certainly true — the application is submitted and read-only.
+ */
+function SubmittedApplicationNotice({ applicationId }: { readonly applicationId: string }) {
+  const consents = useApplicationConsents(applicationId);
+  const isDecisionRequired = consents.data?.isDecisionRequired ?? false;
+
+  if (isDecisionRequired) {
+    return <Alert>
+      <ShieldQuestion aria-hidden />
+      <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+        <span>Your application was submitted. It needs your consent before SetuX can request the information required to verify it.</span>
+        <Button asChild size="sm"><Link to={`/citizen/applications/${applicationId}/consent`}>Review consent request</Link></Button>
+      </AlertDescription>
+    </Alert>;
+  }
+
+  const hasDecidedConsents = (consents.data?.consents.length ?? 0) > 0;
+  return <Alert>
+    <CheckCircle2 aria-hidden />
+    <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+      <span>Your application was submitted successfully and is now read-only.{hasDecidedConsents ? ' You have responded to every consent request.' : ' Verification begins in later SetuX steps.'}</span>
+      {hasDecidedConsents && <Button asChild size="sm" variant="outline"><Link to={`/citizen/applications/${applicationId}/consent`}>View consent decisions</Link></Button>}
+    </AlertDescription>
+  </Alert>;
 }
 
 function ReadOnlyField({ label, name, autoComplete, value, className = '' }: { readonly label: string; readonly name: string; readonly autoComplete: string; readonly value: string; readonly className?: string }) {
