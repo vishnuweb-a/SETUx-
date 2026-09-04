@@ -107,13 +107,6 @@ describe('connector registry', () => {
     expect(resolveConnector('DIGILOCKER_MOCK')).not.toBeNull();
   });
 
-  it('returns null for a source no connector serves in this phase', () => {
-    // Phase 9 registers these. Until then the honest answer is "not available",
-    // not a fabricated retrieval.
-    expect(resolveConnector('MOCK_IDENTITY_API')).toBeNull();
-    expect(resolveConnector('MOCK_INCOME_API')).toBeNull();
-  });
-
   it('returns null for an unknown source code, so a forged one resolves to nothing', () => {
     expect(resolveConnector('TOTALLY_MADE_UP')).toBeNull();
   });

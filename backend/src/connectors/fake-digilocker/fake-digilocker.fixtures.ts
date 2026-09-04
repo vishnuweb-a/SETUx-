@@ -11,16 +11,17 @@
  * provider can return is bounded by what the database actually asks for, not by
  * what a client requests.
  */
+import type { ProviderFieldMap, SimulatedRecord } from '../connector.normalize.js';
+import { CONNECTOR_BEHAVIOUR, type ConnectorBehaviour } from '../connector.simulation.js';
 import type { NormalizedConnectorResult } from '../connector.types.js';
 
-/** Document shapes as the simulated provider itself would express them. */
-export interface FakeDigiLockerDocument {
-  readonly documentType: string;
-  readonly issuer: string;
-  readonly issuedOn: string;
-  /** Provider-native field names, deliberately unlike SetuX's own. The mapper bridges them. */
-  readonly attributes: Readonly<Record<string, string>>;
-}
+/**
+ * Document shapes as the simulated provider itself would express them.
+ *
+ * Phase 9 generalised this into `SimulatedRecord`, shared by all four
+ * providers. The alias is kept so Phase 8's name still resolves.
+ */
+export type FakeDigiLockerDocument = SimulatedRecord;
 
 /**
  * The requirement codes this provider serves.
@@ -29,7 +30,7 @@ export interface FakeDigiLockerDocument {
  * and `COMMUNITY_RECORD` (supabase/seed/seed.sql). A requirement outside this
  * map is refused rather than answered with a plausible-looking invention.
  */
-export const FAKE_DIGILOCKER_DOCUMENTS: Readonly<Record<string, FakeDigiLockerDocument>> = {
+export const FAKE_DIGILOCKER_DOCUMENTS: Readonly<Record<string, SimulatedRecord>> = {
   BANK_DETAILS: {
     documentType: 'BANK_ACCOUNT_PROOF',
     issuer: 'Demo Public Bank (Simulated)',
@@ -64,9 +65,7 @@ export const FAKE_DIGILOCKER_DOCUMENTS: Readonly<Record<string, FakeDigiLockerDo
  * for it, `bankAccountMasked` is SetuX's. Renaming a provider field must not
  * ripple into the database or the UI (digilocker-integration.md §15).
  */
-export const FAKE_DIGILOCKER_FIELD_MAP: Readonly<
-  Record<string, { readonly fieldKey: string; readonly label: string }>
-> = {
+export const FAKE_DIGILOCKER_FIELD_MAP: ProviderFieldMap = {
   acct_no_masked: { fieldKey: 'bankAccountMasked', label: 'Account number' },
   acct_holder: { fieldKey: 'bankAccountHolder', label: 'Account holder' },
   branch_ifsc: { fieldKey: 'bankBranchCode', label: 'Branch code' },
@@ -79,29 +78,22 @@ export const FAKE_DIGILOCKER_FIELD_MAP: Readonly<
   valid_until: { fieldKey: 'communityValidUntil', label: 'Valid until' },
 };
 
-/**
- * Deterministic synthetic reference for one attempt.
- *
- * Derived from the correlation id so the same attempt always produces the same
- * reference, which is what lets tests assert on it without freezing the clock.
- */
-export const syntheticReference = (correlationId: string): string =>
-  `SYNTH-DL-${correlationId.replace(/-/gu, '').slice(0, 12).toUpperCase()}`;
+/** Prefix for this provider's synthetic attempt references. */
+export const FAKE_DIGILOCKER_REFERENCE_PREFIX = 'DL';
 
 /**
  * Behaviour switches for the simulated provider.
  *
- * Deliberately NOT reachable from a request body. The connector reads these
- * from its own construction, so production code has no path that lets a client
- * ask the provider to fail (Phase 8 §26).
+ * Phase 9 moved these to `connector.simulation.ts` so all four providers share
+ * one definition; these aliases keep Phase 8's names working.
+ *
+ * Deliberately NOT reachable from a request body. The connector reads its
+ * behaviour from its own construction, so production code has no path that lets
+ * a client ask the provider to fail (Phase 8 §26).
  */
-export const FAKE_DIGILOCKER_BEHAVIOUR = {
-  NORMAL: 'NORMAL',
-  ALWAYS_FAIL: 'ALWAYS_FAIL',
-} as const;
+export const FAKE_DIGILOCKER_BEHAVIOUR = CONNECTOR_BEHAVIOUR;
 
-export type FakeDigiLockerBehaviour =
-  (typeof FAKE_DIGILOCKER_BEHAVIOUR)[keyof typeof FAKE_DIGILOCKER_BEHAVIOUR];
+export type FakeDigiLockerBehaviour = ConnectorBehaviour;
 
 export const NORMALIZED_RESULT_KEYS: readonly (keyof NormalizedConnectorResult)[] = [
   'documentType',

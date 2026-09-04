@@ -398,8 +398,10 @@ describe('provider failure', () => {
 
 describe('unsupported source', () => {
   it('does not claim a retrieval for a source no connector serves', async () => {
+    // Phase 9 registered the four seeded sources, so this names one that is not
+    // in the catalogue at all — the case a forged or newly seeded source hits.
     retrievals.listRetrievableRequirements.mockResolvedValue([
-      requirement('GRANTED', { sourceCode: 'MOCK_INCOME_API' }),
+      requirement('GRANTED', { sourceCode: 'MOCK_UNREGISTERED_API' }),
     ]);
     const response = await retrieve();
     expect(response.status).toBe(409);

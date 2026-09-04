@@ -3,7 +3,15 @@ import { ApiError } from '@/services/api-client';
 const INVALID_CREDENTIALS = 'Invalid email or password.';
 const GENERIC_FAILURE = 'Could not sign you in. Please try again.';
 const RATE_LIMITED = 'Too many attempts. Please wait a moment and try again.';
-const OFFLINE = 'Could not reach SetuX. Check your connection and try again.';
+/**
+ * Shown when the request never reached a SetuX handler.
+ *
+ * It names the backend explicitly. The overwhelmingly common cause in
+ * development is that only the frontend was started, and a message about "your
+ * connection" sends the reader to look at the wrong thing entirely.
+ */
+const OFFLINE =
+  'Could not reach the SetuX server. If you are running SetuX locally, make sure the backend is running (npm run dev).';
 
 /**
  * Supabase Auth error messages that mean the credentials were wrong.

@@ -21,6 +21,13 @@ const LOCAL_DEV_ORIGINS = [
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5175',
+  // IPv6 loopback. On Windows `localhost` resolves to `::1` first, so a browser
+  // opened on the IPv6 address sends `Origin: http://[::1]:5173`. Without these
+  // entries that request is blocked before it reaches a SetuX handler and
+  // sign-in fails with a network error that names nothing useful.
+  'http://[::1]:5173',
+  'http://[::1]:5174',
+  'http://[::1]:5175',
 ] as const;
 
 /** Parses the comma-separated `CORS_ORIGIN` value; empty entries are dropped. */

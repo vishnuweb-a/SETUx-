@@ -6,6 +6,53 @@ Architecture: Modular Monolith
 Connector Strategy: Fake / Mock Government Connectors
 Backend: Supabase + SetuX API
 
+Phase 9 implementation profile (2026-09-05)
+
+Phase 8 built the connector LAYER and one connector behind it. Phase 9 adds the
+remaining three simulated systems described in this document (§12, §13, §11),
+so every seeded `data_sources` row now resolves to a connector:
+
+  DIGILOCKER_MOCK     FakeDigiLockerConnector   BANK_DETAILS, COMMUNITY_RECORD
+  MOCK_IDENTITY_API   FakeIdentityConnector     IDENTITY
+  MOCK_EDUCATION_API  FakeEducationConnector    EDUCATION_RECORD
+  MOCK_INCOME_API     FakeIncomeConnector       INCOME_RECORD
+
+They were added by REGISTRATION alone (§16, §17). The retrieval service, the
+API contract, the database schema and the error model are unchanged — which is
+the substantive claim this document makes about the architecture, now actually
+demonstrated rather than asserted:
+
+  backend/src/connectors/
+  ├── connector.types.ts        the GovernmentDataConnector contract
+  ├── connector.registry.ts     data_sources.code → connector  (the only change)
+  ├── connector.normalize.ts    the shared provider → SetuX mapper (§14, §15)
+  ├── connector.simulation.ts   shared behaviour + synthetic references (§25)
+  ├── fake-digilocker/
+  ├── fake-identity/
+  ├── fake-education/
+  └── fake-income/
+
+Phase 9 extracted `connector.normalize.ts` and `connector.simulation.ts` from
+the Phase 8 DigiLocker module. Four private copies of one mapper and one failure
+switch would have been four places to keep consistent; the synthetic DATA stays
+per-connector, where it belongs.
+
+Still NOT implemented (Phase 10 and later):
+
+  - connector health checks and the admin view (§24, §33)
+  - automatic retry with a retry budget (§23) — retry remains citizen-initiated
+  - the workflow engine calling connectors (§18); retrieval is still invoked by
+    the citizen and advances no workflow state
+  - the identity MISMATCH and NOT_FOUND demo scenarios (§28, §29); Phase 9
+    connectors implement the success path and the provider-outage path
+
+On §12 and §13: this document sketches those connectors returning a verification
+verdict (`"status": "VERIFIED"`). Phase 9 deliberately does NOT do that.
+A connector reports what the system holds — `identityMatch: MATCHED`,
+`incomeBand: BELOW_THRESHOLD` — as ordinary retrieved data with
+`verification_status = PENDING`. Turning provider data into a verification is
+Phase 10's judgement, and §6 already says a connector must not make it.
+
 Phase 8 implementation profile (2026-09-04)
 
 Phase 8 implements the connector LAYER described below, and exactly one

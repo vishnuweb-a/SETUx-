@@ -1,15 +1,19 @@
 /**
- * Fake DigiLocker connector.
+ * Fake education department connector.
  *
- * Stands in for a DigiLocker-style document repository. It makes NO network
- * call of any kind — there is no HTTP client in this module, no base URL, and
- * no credential — so the prototype can demonstrate the full retrieval flow with
- * nothing external to depend on or leak to (Phase 8 §12,
- * mock-services/fake-digilocker/README.md).
+ * Stands in for a board/university records system returning a citizen's
+ * academic record and enrolment status. It makes NO network call of any kind —
+ * there is no HTTP client in this module, no base URL, and no credential — so
+ * the prototype can demonstrate the full retrieval flow with nothing external
+ * to depend on or leak to (mock-services/fake-education/README.md).
  *
  * The simulation is deterministic on purpose. A provider that failed at random
  * would make the demo unreliable and the tests flaky; failure is instead an
- * explicit construction-time behaviour (§26).
+ * explicit construction-time behaviour (Phase 9 §28).
+ *
+ * The connector returns the record. It does not decide whether the aggregate
+ * clears the scholarship's threshold — that is an eligibility judgement, and it
+ * belongs to Phase 10 (government-connector.md §6).
  */
 import { normalizeRecord } from '../connector.normalize.js';
 import {
@@ -25,16 +29,16 @@ import {
   type NormalizedConnectorResult,
 } from '../connector.types.js';
 import {
-  FAKE_DIGILOCKER_DOCUMENTS,
-  FAKE_DIGILOCKER_FIELD_MAP,
-  FAKE_DIGILOCKER_REFERENCE_PREFIX,
-} from './fake-digilocker.fixtures.js';
+  FAKE_EDUCATION_FIELD_MAP,
+  FAKE_EDUCATION_RECORDS,
+  FAKE_EDUCATION_REFERENCE_PREFIX,
+} from './fake-education.fixtures.js';
 
 /** The `data_sources.code` row this connector is registered against. */
-export const FAKE_DIGILOCKER_SOURCE_CODE = 'DIGILOCKER_MOCK';
+export const FAKE_EDUCATION_SOURCE_CODE = 'MOCK_EDUCATION_API';
 
-export class FakeDigiLockerConnector implements GovernmentDataConnector {
-  readonly sourceCode = FAKE_DIGILOCKER_SOURCE_CODE;
+export class FakeEducationConnector implements GovernmentDataConnector {
+  readonly sourceCode = FAKE_EDUCATION_SOURCE_CODE;
   readonly isSimulated = true;
 
   /**
@@ -52,29 +56,26 @@ export class FakeDigiLockerConnector implements GovernmentDataConnector {
     if (this.behaviour === CONNECTOR_BEHAVIOUR.ALWAYS_FAIL) {
       throw new ConnectorError(
         CONNECTOR_ERROR_CODES.PROVIDER_UNAVAILABLE,
-        'The simulated DigiLocker service did not respond.',
+        'The simulated education department did not respond.',
         true,
       );
     }
 
-    const document = FAKE_DIGILOCKER_DOCUMENTS[request.requirementCode];
-    if (!document) {
+    const record = FAKE_EDUCATION_RECORDS[request.requirementCode];
+    if (!record) {
       // Not retryable: the requirement is not one this provider serves, and no
       // amount of retrying will change that.
       throw new ConnectorError(
         CONNECTOR_ERROR_CODES.UNSUPPORTED_REQUIREMENT,
-        'The simulated DigiLocker service does not hold this document.',
+        'The simulated education department does not hold this record.',
         false,
       );
     }
 
     return normalizeRecord({
-      record: document,
-      fieldMap: FAKE_DIGILOCKER_FIELD_MAP,
-      providerReference: syntheticReference(
-        FAKE_DIGILOCKER_REFERENCE_PREFIX,
-        request.correlationId,
-      ),
+      record,
+      fieldMap: FAKE_EDUCATION_FIELD_MAP,
+      providerReference: syntheticReference(FAKE_EDUCATION_REFERENCE_PREFIX, request.correlationId),
     });
   }
 }
