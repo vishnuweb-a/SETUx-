@@ -590,6 +590,19 @@ Select Required Document
   ↓
 SetuX receives normalized document metadata/data
 
+Status: implemented (2026-09-04).
+
+Implemented as an in-process connector module behind the connector interface
+rather than a separate mock HTTP service, which government-connector.md §9
+recommends for the MVP. Document *selection* is automatic: the requirement
+determines the document, so there is nothing for the citizen to choose between.
+
+Retrieval is NOT verification. A retrieved document has been fetched from the
+system that issued it and has not been checked. `verifications` stays empty and
+`applications.status` does not move; both belong to Phase 9/10.
+
+Contract: docs/API/retrievals.md
+
 Phase 9 — Fake Government Connectors
 
 Objective

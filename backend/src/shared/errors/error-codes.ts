@@ -59,6 +59,21 @@ export const ERROR_CODES = {
   CONSENT_ALREADY_DECIDED: 'CONSENT_ALREADY_DECIDED',
   CONSENT_ONBOARDING_REQUIRED: 'CONSENT_ONBOARDING_REQUIRED',
 
+  /**
+   * Retrieval codes — Phase 8, `docs/API/retrievals.md`.
+   *
+   * The two consent codes are distinct because they mean genuinely different
+   * things to the citizen: one is an action they can take, the other is a
+   * decision they already made. Neither reveals anything about another
+   * citizen's resources — those stay concealed as 404s, as in Phase 6 and 7.
+   */
+  RETRIEVAL_CONSENT_REQUIRED: 'RETRIEVAL_CONSENT_REQUIRED',
+  RETRIEVAL_CONSENT_DENIED: 'RETRIEVAL_CONSENT_DENIED',
+  RETRIEVAL_NOT_APPLICABLE: 'RETRIEVAL_NOT_APPLICABLE',
+  RETRIEVAL_ALREADY_COMPLETED: 'RETRIEVAL_ALREADY_COMPLETED',
+  RETRIEVAL_PROVIDER_FAILED: 'RETRIEVAL_PROVIDER_FAILED',
+  RETRIEVAL_ONBOARDING_REQUIRED: 'RETRIEVAL_ONBOARDING_REQUIRED',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',

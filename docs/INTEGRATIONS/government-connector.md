@@ -6,6 +6,40 @@ Architecture: Modular Monolith
 Connector Strategy: Fake / Mock Government Connectors
 Backend: Supabase + SetuX API
 
+Phase 8 implementation profile (2026-09-04)
+
+Phase 8 implements the connector LAYER described below, and exactly one
+connector behind it: the fake DigiLocker document provider.
+
+Implemented:
+
+  - the common connector contract, as `GovernmentDataConnector` in
+    `backend/src/connectors/connector.types.ts`
+  - the provider adapter pattern and its response mapper
+  - the connector registry (§16), keyed on `data_sources.code` so connector
+    selection is database-driven and server-owned
+  - canonical/normalized response models (§14, §15)
+  - the error model (§20) and the retryable/non-retryable split (§21)
+  - the consent boundary (§19) — enforced before any connector is constructed
+  - connector operation records and audit events (§33, §34)
+
+NOT implemented in Phase 8 (Phase 9 and later):
+
+  - the identity, education and income connectors (§12, §13)
+  - connector health checks and the admin view (§24, §33)
+  - automatic retry with a retry budget (§23) — Phase 8 retry is
+    citizen-initiated
+  - the workflow engine calling connectors (§18); Phase 8 retrieval is invoked
+    by the citizen from their application, and advances no workflow state
+
+Note on §33: connector activity is recorded in the existing `data_retrievals`
+table rather than a new `connector_operations` table. `data_retrievals` already
+carries application, source, consent, status, attempt number, external
+reference, error code and timestamps — every field §33 asks for — and Phase 8
+adds `requirement_id` to it. A second table would duplicate the first.
+
+--------------------------------------------------------------------------------
+
 1. Purpose
 
 This document defines the government connector layer for the SetuX SIH prototype.

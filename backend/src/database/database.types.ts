@@ -375,6 +375,7 @@ export type Database = {
           application_id: string;
           data_source_id: string;
           consent_id: string | null;
+          requirement_id: string | null;
           request_reference: string | null;
           status: Database['public']['Enums']['retrieval_status'];
           attempt_number: number;
@@ -391,6 +392,7 @@ export type Database = {
           application_id: string;
           data_source_id: string;
           consent_id?: string | null;
+          requirement_id?: string | null;
           request_reference?: string | null;
           status?: Database['public']['Enums']['retrieval_status'];
           attempt_number?: number;
@@ -407,6 +409,7 @@ export type Database = {
           application_id?: string;
           data_source_id?: string;
           consent_id?: string | null;
+          requirement_id?: string | null;
           request_reference?: string | null;
           status?: Database['public']['Enums']['retrieval_status'];
           attempt_number?: number;
@@ -678,6 +681,27 @@ export type Database = {
       decide_application_consent: {
         Args: { p_consent_id: string; p_citizen_id: string; p_granted: boolean };
         Returns: Database['public']['Tables']['consents']['Row'][];
+      };
+      record_application_retrieval: {
+        Args: {
+          p_application_id: string;
+          p_citizen_id: string;
+          p_requirement_id: string;
+          p_request_reference: string;
+          p_values: Json;
+          p_response_metadata: Json;
+        };
+        Returns: Database['public']['Tables']['data_retrievals']['Row'][];
+      };
+      record_application_retrieval_failure: {
+        Args: {
+          p_application_id: string;
+          p_citizen_id: string;
+          p_requirement_id: string;
+          p_error_code: string;
+          p_error_message: string;
+        };
+        Returns: Database['public']['Tables']['data_retrievals']['Row'][];
       };
     };
     Enums: {

@@ -7,6 +7,51 @@ Purpose: Scholarship document verification
 Backend: Supabase + SetuX API
 Architecture: Modular Monolith
 
+Phase 8 implementation profile (2026-09-04)
+
+This document is the approved design for the DigiLocker integration as a whole.
+Phase 8 implements the RETRIEVAL half of it. Read this profile first: where the
+design below describes verification, identity matching or workflow advancement,
+that is Phase 9/10 and is NOT implemented.
+
+Implemented in Phase 8:
+
+  - the connector interface (`GovernmentDataConnector`)
+  - the fake DigiLocker adapter and its response mapper
+  - synthetic fixture documents
+  - the connector registry, keyed on `data_sources.code`
+  - consent enforcement before any provider call
+  - credential retrieval and normalization
+  - persistence of retrieval metadata and normalized values
+  - deterministic failure simulation and retry
+  - audit events
+
+NOT implemented in Phase 8 (deferred to Phase 9/10):
+
+  - credential *verification* and its state machine (§17, §18)
+  - identity matching (§16) — MATCH / MISMATCH / UNVERIFIABLE
+  - the `verifications` table; it stays empty
+  - workflow advancement; `applications.status` does not move
+  - officer and admin views (§31, §33)
+  - the education/identity/income connectors (§19)
+  - automatic retry with a retry budget (§24) — Phase 8 retry is
+    citizen-initiated, one attempt per action
+
+Two deliberate departures from the design below:
+
+  - §20 proposes provider-named routes (`/education/authorize`,
+    `/education/credentials`). Phase 8 exposes resource-oriented routes instead —
+    `GET|POST /api/v1/applications/:id/retrievals` — so the client never names a
+    provider and the URL does not bake in today's single connector. The
+    principle §20 states, that the public API must not leak mock-provider
+    endpoints, is preserved.
+  - §21's separate mock HTTP service is implemented as an in-process module,
+    which `government-connector.md` §9 recommends for the MVP.
+
+The authoritative Phase 8 contract is `docs/API/retrievals.md`.
+
+--------------------------------------------------------------------------------
+
 1. Purpose
 
 This document defines how SetuX will integrate with a dummy DigiLocker-like provider for the SIH prototype.
