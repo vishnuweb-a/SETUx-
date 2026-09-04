@@ -58,21 +58,55 @@ describe.skipIf(!enabled)('Supabase connectivity and schema', () => {
   });
 
   it('links every scholarship requirement to a data source', async () => {
+    // Scoped to SCHOLARSHIP by its stable service code, not by row id and not
+    // across the whole table. The catalogue holds several services (Phase 5),
+    // and `service_requirements.data_source_id` is nullable on purpose: a
+    // DECLARATION is supplied by the citizen rather than fetched from a
+    // government system, so `every row in the table has a source` is not a
+    // product invariant. What this test pins is the MVP service's contract.
+    const { data: service, error: lookupError } = await db
+      .from('services')
+      .select('id')
+      .eq('code', 'SCHOLARSHIP')
+      .single();
+
+    expect(lookupError).toBeNull();
+    expect(service?.id).toBeTruthy();
+
     const { data, error } = await db
       .from('service_requirements')
       .select('requirement_code, required, display_order, data_sources(code)')
+      .eq('service_id', service?.id ?? '')
       .order('display_order');
 
     expect(error).toBeNull();
-    expect(data).toHaveLength(4);
-    expect(data?.map((row) => row.requirement_code)).toEqual([
-      'IDENTITY',
-      'EDUCATION_RECORD',
-      'INCOME_RECORD',
-      'BANK_DETAILS',
+
+    // Each SCHOLARSHIP requirement, in display order, resolves through the
+    // foreign key to the specific government system that supplies it. This
+    // stays true however many requirements other services gain later.
+    expect(
+      data?.map((row) => ({
+        requirement_code: row.requirement_code,
+        required: row.required,
+        display_order: row.display_order,
+        source: row.data_sources?.code ?? null,
+      })),
+    ).toEqual([
+      { requirement_code: 'IDENTITY', required: true, display_order: 1, source: 'MOCK_IDENTITY_API' },
+      {
+        requirement_code: 'EDUCATION_RECORD',
+        required: true,
+        display_order: 2,
+        source: 'MOCK_EDUCATION_API',
+      },
+      { requirement_code: 'INCOME_RECORD', required: true, display_order: 3, source: 'MOCK_INCOME_API' },
+      {
+        requirement_code: 'BANK_DETAILS',
+        required: false,
+        display_order: 4,
+        source: 'DIGILOCKER_MOCK',
+      },
     ]);
-    // Every requirement resolves its source through the foreign key.
-    expect(data?.every((row) => row.data_sources !== null)).toBe(true);
   });
 
   it('generates application numbers in the STX-{YEAR}-{SEQUENCE} format', async () => {
