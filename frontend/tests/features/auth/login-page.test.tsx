@@ -19,6 +19,7 @@ const buildAuth = (overrides: Partial<AuthContextValue> = {}): AuthContextValue 
   sessionEndReason: null,
   signIn: vi.fn().mockResolvedValue(undefined),
   signOut: vi.fn().mockResolvedValue(undefined),
+  refreshUser: vi.fn().mockResolvedValue(undefined),
   clearSessionEndReason: vi.fn(),
   ...overrides,
 });

@@ -21,8 +21,14 @@ SetuX Backend
 
 ## Status
 
-**Phase 2 complete.** 17 tables, 9 enums, RLS enabled on every table with 35
+**Phase 4 complete.** 17 tables, 9 enums, RLS enabled on every table with 35
 policies, and synthetic reference seed data.
+
+Phase 4 (onboarding) reuses this schema unchanged — no table, column,
+constraint, index, enum or policy was added or altered. It contributes one
+migration holding two functions that make onboarding completion atomic. That
+migration is **not yet applied to the shared project**; the backend falls back
+to two ordered writes until it is. See the file's header for how to apply it.
 
 Migrations apply in filename order:
 
@@ -33,6 +39,7 @@ Migrations apply in filename order:
 | 3 | `20260829090200_setux_catalogue.sql` |
 | 4 | `20260829090300_setux_applications.sql` |
 | 5 | `20260829090400_setux_rls.sql` |
+| 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4 — not yet applied) |
 
 Full documentation — schema, relationships, the RLS access model, environment
 setup and validation commands — is in

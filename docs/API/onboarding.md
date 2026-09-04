@@ -958,6 +958,14 @@ Required
 
 Any authenticated
 
+GET
+
+/api/v1/onboarding/organizations/:code/departments
+
+Required
+
+Government
+
 POST
 
 /api/v1/onboarding/citizen
@@ -1280,7 +1288,40 @@ Sensitive data excluded from logs
 
 Audit events implemented
 
-45. Final Design Principle
+45. Implementation Note — Organization Resolution (Phase 4)
+
+Section 17 lists `organization_name`, `organization_id` and `department` as
+user-supplied strings, and section 18 requires that an officer must not become
+attached to a privileged organization simply by asserting one. The Phase 2
+schema resolves this by storing `government_profiles.organization_id` and
+`department_id` as foreign keys.
+
+The implemented contract therefore accepts a **code and names, never an id**:
+
+    { organizationCode, organizationName, department }
+                    |
+                    v
+      organizations.code  -> organization_id   (must exist, must be ACTIVE)
+      organizations.name  -> must match the registered name
+      departments.name    -> department_id, scoped to that organization
+                    |
+                    v
+              government_profiles
+
+An unregistered code, a name that contradicts the registered organization, or a
+department belonging to a different organization is rejected with
+`ONBOARDING_VALIDATION_ERROR` (422) and a field-level detail. A request
+carrying `organizationId` or `departmentId` is rejected outright, because the
+schemas are strict and have no such field.
+
+`GET /api/v1/onboarding/organizations/:code/departments` exists to serve this
+rule: the officer form needs the valid department set for a code so it can offer
+a picker instead of asking the user to guess a value the backend would reject.
+It returns reference data only — organization name and department names, no
+identifiers and no personal data — and is restricted to the
+GOVERNMENT_OFFICER role.
+
+46. Final Design Principle
 
 The SetuX onboarding architecture follows:
 

@@ -23,6 +23,7 @@ const buildAuth = (overrides: Partial<AuthContextValue> = {}): AuthContextValue 
   sessionEndReason: null,
   signIn: vi.fn(),
   signOut: vi.fn(),
+  refreshUser: vi.fn(),
   clearSessionEndReason: vi.fn(),
   ...overrides,
 });
