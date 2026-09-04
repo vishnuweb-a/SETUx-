@@ -7,6 +7,45 @@ Backend: Supabase + PostgreSQL
 Architecture: Modular Monolith
 API Version: /api/v1
 
+Phase 6 implementation profile (2026-09-04)
+
+The lifecycle described later in this document spans multiple project phases.
+The currently implemented Phase 6 surface is intentionally limited to:
+
+POST   /api/v1/applications
+GET    /api/v1/applications
+GET    /api/v1/applications/:applicationId
+PATCH  /api/v1/applications/:applicationId
+POST   /api/v1/applications/:applicationId/submit
+
+Phase 6 owns only DRAFT → SUBMITTED. Submission does not create consent,
+retrieve data, call a connector, run verification, create a review, or emit a
+notification. Those remain Phase 7 and later responsibilities.
+
+Create request:
+
+{
+  "service_id": "uuid"
+}
+
+Draft update request:
+
+{
+  "fields": {
+    "CONFIGURED_DECLARATION_CODE": "Citizen-supplied declaration"
+  }
+}
+
+Only requirements configured as DECLARATION may be written by a citizen.
+Profile values are returned read-only and are not duplicated into
+application_data. Requirements supplied by government or DigiLocker sources
+are displayed but are not collected during Phase 6.
+
+One active application per (citizen, service) is enforced by a partial unique
+index. APPROVED, REJECTED, and CANCELLED are terminal for this uniqueness rule.
+Creation, draft replacement, lifecycle events, and submission use controlled
+database functions so each logical operation is atomic.
+
 1. Purpose
 
 This document defines the API contract for the SetuX application module.

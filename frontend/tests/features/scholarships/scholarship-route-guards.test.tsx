@@ -51,6 +51,8 @@ const renderRoutes = (auth: AuthContextValue, initialPath: string) =>
             <Route element={<RequireOnboarding />}>
               <Route path="/citizen/services" element={<p>Catalogue</p>} />
               <Route path="/citizen/services/:id" element={<p>Detail</p>} />
+              <Route path="/citizen/applications" element={<p>Applications</p>} />
+              <Route path="/citizen/applications/:id" element={<p>Application detail</p>} />
             </Route>
           </Route>
         </Routes>
@@ -115,5 +117,16 @@ describe('catalogue route guards', () => {
 
     expect(await screen.findByText('Not authorized')).toBeInTheDocument();
     expect(screen.queryByText('Catalogue')).not.toBeInTheDocument();
+  });
+
+  it('admits only a completed citizen to application routes', async () => {
+    renderRoutes(buildAuth({ user: userWith('CITIZEN', 'COMPLETED') }), '/citizen/applications');
+    expect(await screen.findByText('Applications')).toBeInTheDocument();
+  });
+
+  it('returns an incomplete citizen to onboarding from application detail', async () => {
+    renderRoutes(buildAuth({ user: userWith('CITIZEN', 'IN_PROGRESS') }), '/citizen/applications/a1111111-1111-4111-8111-111111111111');
+    expect(await screen.findByText('Citizen onboarding')).toBeInTheDocument();
+    expect(screen.queryByText('Application detail')).not.toBeInTheDocument();
   });
 });

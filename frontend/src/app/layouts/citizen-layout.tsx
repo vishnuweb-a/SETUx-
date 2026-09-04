@@ -1,5 +1,5 @@
-import { Grid2x2, LayoutDashboard, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
-import { useState, type ComponentType } from 'react';
+import { FileText, Grid2x2, LayoutDashboard, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SetuxBrand, useAuth } from '@/features/auth';
@@ -17,9 +17,8 @@ import { cn } from '@/lib/utils';
  * repeated by each page.
  *
  * Navigation lists only destinations that exist. The references also show
- * My Applications, Consents, Notifications and Profile; those belong to Phase 6
- * and later, and a link to a route that is not built yet is a broken promise,
- * not a preview (Phase 5 §29, §56).
+ * Consents, Notifications and Profile; those belong to Phase 7 and later, and
+ * a link to a route that is not built yet is a broken promise, not a preview.
  */
 
 interface NavItem {
@@ -33,10 +32,36 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { to: '/citizen', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/citizen/services', label: 'Services', icon: Grid2x2 },
+  { to: '/citizen/applications', label: 'My Applications', icon: FileText },
 ];
+
+/**
+ * Tracks Tailwind's `lg` breakpoint, where the drawer becomes a permanent rail.
+ *
+ * Needed because a closed drawer is only translated off-screen, and off-screen
+ * is not hidden: without this the rail's links stay focusable and exposed to
+ * assistive technology at phone and tablet widths.
+ */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsDesktop(query.matches);
+
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  return isDesktop;
+}
 
 export function CitizenLayout() {
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const { pathname } = useLocation();
 
   // Following a link on a phone must close the drawer, or the destination
@@ -62,7 +87,7 @@ export function CitizenLayout() {
         />
       )}
 
-      <Sidebar isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
+      <Sidebar isOpen={isNavOpen} isDesktop={isDesktop} onClose={() => setIsNavOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <CitizenHeader onOpenNav={() => setIsNavOpen(true)} />
@@ -82,9 +107,21 @@ export function CitizenLayout() {
  * drawer below that — at phone widths a 260px rail would leave nothing for the
  * content it exists to navigate to.
  */
-function Sidebar({ isOpen, onClose }: { readonly isOpen: boolean; readonly onClose: () => void }) {
+function Sidebar({
+  isOpen,
+  isDesktop,
+  onClose,
+}: {
+  readonly isOpen: boolean;
+  readonly isDesktop: boolean;
+  readonly onClose: () => void;
+}) {
   return (
     <div
+      // A closed drawer is only slid out of view, so below `lg` it must also be
+      // taken out of the tab order — otherwise Tab moves focus to links the
+      // user cannot see.
+      inert={!isDesktop && !isOpen}
       className={cn(
         'fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col overflow-hidden bg-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full',
@@ -156,9 +193,8 @@ function Sidebar({ isOpen, onClose }: { readonly isOpen: boolean; readonly onClo
  *
  * Carries the drawer trigger on small screens and the account control on all of
  * them. The reference also shows a global search field here; it searches
- * applications and documents as well as services, which do not exist yet, so
- * the catalogue's own search sits on the catalogue screen instead of being
- * mocked up here (Phase 5 §6).
+ * applications and documents as well as services. Cross-resource search is not
+ * part of Phase 6, so the catalogue's own search remains on that screen.
  */
 function CitizenHeader({ onOpenNav }: { readonly onOpenNav: () => void }) {
   const { pathname } = useLocation();
@@ -195,7 +231,11 @@ function CitizenHeader({ onOpenNav }: { readonly onOpenNav: () => void }) {
  * falling through to the dashboard.
  */
 const sectionTitleFor = (pathname: string): string =>
-  pathname.startsWith('/citizen/services') ? 'Scholarships' : 'Dashboard';
+  pathname.startsWith('/citizen/applications')
+    ? 'My Applications'
+    : pathname.startsWith('/citizen/services')
+      ? 'Scholarships'
+      : 'Dashboard';
 
 /**
  * Who is signed in, and the way out.

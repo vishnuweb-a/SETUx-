@@ -1174,7 +1174,7 @@ Database/Auth: Supabase
 Integrations: Fake Government Connectors
 Primary Use Case: Scholarship Workflow
 
-Current phase: Phase 4 complete — onboarding.
+Current phase: Phase 6 implemented — application management.
 
 Phase 0  Repository architecture and engineering foundation
 Phase 1  Frontend/backend foundation, health endpoint, logging, security middleware
@@ -1182,8 +1182,8 @@ Phase 2  Supabase schema: 17 tables, 9 enums, Row Level Security on every table
 Phase 3  Authentication and RBAC (Supabase Auth, server-side role resolution)
 Phase 4  Citizen and government officer onboarding
 
-Phase 5 (scholarship catalogue) onward is not implemented. See
-docs/PHASES/phase.md for the full phase plan.
+Phases 0–6 are implemented through application management. Phase 7 onward is
+not implemented. See docs/PHASES/phase.md for the full phase plan.
 
 Phase 4 adds the first authenticated business vertical slice:
 
@@ -1221,9 +1221,20 @@ The catalogue reuses the Phase 2 services and service_requirements tables; no
 new persistence model was introduced. Only services with status = ACTIVE are
 ever exposed, enforced in the query rather than by filtering afterwards.
 
-The Apply control is presentational in this phase: it creates no application,
-collects no consent and starts no verification. Application creation arrives
-with Phase 6. See docs/API/services.md for the API contract.
+The Apply control now creates a server-owned DRAFT and opens the citizen's
+application screen. Citizens can save configured declaration fields, list and
+reopen their applications, and explicitly submit a draft. Submitted records are
+read-only. Phase 6 creates no consent, retrieval, verification, review, audit,
+or notification records. See docs/API/application.md for the API contract.
+
+Citizen application routes:
+
+/citizen/applications
+/citizen/applications/:applicationId
+
+The migration `20260904090000_setux_application_management.sql` must be applied
+after the existing Phase 2–5 migrations. It adds the active-application
+uniqueness invariant and the atomic Phase 6 database functions.
 
 One migration is outstanding — see "Database Setup" below.
 

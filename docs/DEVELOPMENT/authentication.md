@@ -202,12 +202,23 @@ node scripts/verify-env.mjs
 SETUX_SEED_CITIZEN_PASSWORD='...' SETUX_SEED_OFFICER_PASSWORD='...' \
   node scripts/seed-auth-users.mjs
 
+# ...or seed one fixture, supplying only its password
+SETUX_SEED_CITIZEN_PASSWORD='...' \
+  node scripts/seed-auth-users.mjs --only citizen@setux.test
+
 # 3. Run
 npm run dev            # backend :3000, frontend :5173
 ```
 
 Sign in at <http://localhost:5173/login> as `citizen@setux.test` or
 `officer@setux.test`.
+
+`--only` takes one of those two synthetic addresses and refuses anything else,
+so the seeder cannot be aimed at a real account. Re-running it rotates the
+password and repairs a drifted role, but **leaves existing onboarding progress
+alone** — `onboarding_status = 'NOT_STARTED'` is written only when the script
+creates a profile that did not exist. Passwords come from the environment at
+run time and are never committed. See `scripts/README.md`.
 
 ## Security checklist
 
