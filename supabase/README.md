@@ -26,9 +26,12 @@ policies, and synthetic reference seed data.
 
 Phase 4 (onboarding) reuses this schema unchanged — no table, column,
 constraint, index, enum or policy was added or altered. It contributes one
-migration holding two functions that make onboarding completion atomic. That
-migration is **not yet applied to the shared project**; the backend falls back
-to two ordered writes until it is. See the file's header for how to apply it.
+migration holding two functions that make onboarding completion atomic. Like
+every other migration it must be applied when an environment is set up; the
+backend falls back to two ordered writes if it is absent. It **is** applied to
+the current shared development project (`auqsiwgawphnuceaibvp`), where both
+functions were verified `SECURITY INVOKER` with `EXECUTE` granted to
+`authenticated` only. See the file's header for how to apply it elsewhere.
 
 Migrations apply in filename order:
 
@@ -39,7 +42,7 @@ Migrations apply in filename order:
 | 3 | `20260829090200_setux_catalogue.sql` |
 | 4 | `20260829090300_setux_applications.sql` |
 | 5 | `20260829090400_setux_rls.sql` |
-| 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4 — not yet applied) |
+| 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
 
 Full documentation — schema, relationships, the RLS access model, environment
 setup and validation commands — is in

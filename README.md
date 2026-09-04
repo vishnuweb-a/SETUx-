@@ -1205,6 +1205,26 @@ A newly registered account has onboarding_status = NOT_STARTED and is routed to
 its onboarding form; the dashboards are reachable only once the profile is
 COMPLETED. See docs/API/onboarding.md for the API contract.
 
+Service catalogue
+
+An onboarded citizen can browse the services SetuX offers, search and filter
+them, and open one to see exactly what it requires — including which simulated
+government system supplies each requirement — before applying.
+
+Citizen dashboard
+  ↓
+/citizen/services            (catalogue: search, department filter, pagination)
+  ↓
+/citizen/services/:serviceId (details + requirements + Apply CTA)
+
+The catalogue reuses the Phase 2 services and service_requirements tables; no
+new persistence model was introduced. Only services with status = ACTIVE are
+ever exposed, enforced in the query rather than by filtering afterwards.
+
+The Apply control is presentational in this phase: it creates no application,
+collects no consent and starts no verification. Application creation arrives
+with Phase 6. See docs/API/services.md for the API contract.
+
 One migration is outstanding — see "Database Setup" below.
 
 Prototype disclaimer
