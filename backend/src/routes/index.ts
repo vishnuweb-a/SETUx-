@@ -3,6 +3,7 @@ import { authRouter } from '../modules/auth/index.js';
 import { citizenRouter } from '../modules/citizen/index.js';
 import { governmentRouter } from '../modules/government/index.js';
 import { healthRouter } from '../modules/health/index.js';
+import { onboardingRouter } from '../modules/onboarding/index.js';
 
 /**
  * Versioned API surface, mounted at `config.http.apiPrefix`.
@@ -14,5 +15,6 @@ export const apiRouter = Router();
 
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/onboarding', onboardingRouter);
 apiRouter.use('/citizen', citizenRouter);
 apiRouter.use('/government', governmentRouter);

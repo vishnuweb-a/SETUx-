@@ -634,6 +634,28 @@ export type Database = {
         Args: Record<string, never>;
         Returns: string;
       };
+      complete_citizen_onboarding: {
+        Args: {
+          p_user_id: string;
+          p_full_name: string;
+          p_government_id: string;
+          p_mobile_number: string;
+          p_date_of_birth: string;
+        };
+        Returns: undefined;
+      };
+      complete_government_onboarding: {
+        Args: {
+          p_user_id: string;
+          p_organization_id: string;
+          p_department_id: string;
+          p_full_name: string;
+          p_employee_id: string;
+          p_designation: string;
+          p_official_mobile_number: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       user_role: 'CITIZEN' | 'GOVERNMENT_OFFICER';

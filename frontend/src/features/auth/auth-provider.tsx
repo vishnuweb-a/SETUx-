@@ -126,9 +126,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearSessionEndReason = useCallback(() => setSessionEndReason(null), []);
 
+  // Re-resolves rather than merging a caller-supplied patch, so the refreshed
+  // role and onboarding status are always the backend's own answer.
+  const refreshUser = useCallback(async (): Promise<void> => {
+    await resolveSession();
+  }, [resolveSession]);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, sessionEndReason, signIn, signOut, clearSessionEndReason }),
-    [status, user, sessionEndReason, signIn, signOut, clearSessionEndReason],
+    () => ({
+      status,
+      user,
+      sessionEndReason,
+      signIn,
+      signOut,
+      refreshUser,
+      clearSessionEndReason,
+    }),
+    [status, user, sessionEndReason, signIn, signOut, refreshUser, clearSessionEndReason],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

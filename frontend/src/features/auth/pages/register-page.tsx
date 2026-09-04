@@ -11,7 +11,7 @@ import { useAuth } from '../hooks/use-auth';
 import { signUp } from '../services/auth-service';
 import { USER_ROLES, type UserRole } from '../types/auth.types';
 import { toAuthErrorMessage } from '../utils/auth-error-message';
-import { landingPathForRole } from '../utils/landing-path';
+import { landingPathForUser } from '@/features/onboarding';
 
 /** Mirrors the backend minimum so the user is told before a round trip. */
 const MIN_PASSWORD_LENGTH = 8;
@@ -43,7 +43,7 @@ export function RegisterPage() {
 
   // Someone already signed in has no business registering.
   if (status === 'authenticated' && user) {
-    return <Navigate to={landingPathForRole(user.role)} replace />;
+    return <Navigate to={landingPathForUser(user)} replace />;
   }
 
   const isCitizenContext = selectedContext === USER_ROLES.CITIZEN;

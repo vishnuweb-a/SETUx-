@@ -853,6 +853,22 @@ on every one, plus synthetic reference seed data. See
 docs/DATABASE/database-setup.md for the schema, the RLS access model and the
 migration workflow.
 
+Outstanding migration (Phase 4)
+
+Phase 4 adds no table, column, constraint or policy — it reuses the Phase 2
+schema. It does add one migration containing two PostgreSQL functions that make
+onboarding completion atomic:
+
+supabase/migrations/20260903090000_setux_onboarding_functions.sql
+
+This migration has NOT yet been applied to the shared Supabase project, because
+this environment has no linked Supabase CLI and no direct database access.
+Onboarding works without it: the backend detects the missing functions and falls
+back to two ordered writes (profile row first, completion flag second), which is
+recoverable but not atomic. Apply the migration to close that window — the
+backend then uses the functions automatically, with no code change. Instructions
+are in the migration's own header comment.
+
 19. Running Locally
 
 Start both applications from the repository root:
@@ -1158,9 +1174,38 @@ Database/Auth: Supabase
 Integrations: Fake Government Connectors
 Primary Use Case: Scholarship Workflow
 
-Current phase: Phase 0 complete — repository architecture and the frontend/backend
-engineering foundation are established and validated. No application features are
-implemented yet. See docs/PHASES/phase.md for the full phase plan.
+Current phase: Phase 4 complete — onboarding.
+
+Phase 0  Repository architecture and engineering foundation
+Phase 1  Frontend/backend foundation, health endpoint, logging, security middleware
+Phase 2  Supabase schema: 17 tables, 9 enums, Row Level Security on every table
+Phase 3  Authentication and RBAC (Supabase Auth, server-side role resolution)
+Phase 4  Citizen and government officer onboarding
+
+Phase 5 (scholarship catalogue) onward is not implemented. See
+docs/PHASES/phase.md for the full phase plan.
+
+Phase 4 adds the first authenticated business vertical slice:
+
+Login
+  ↓
+Server-side role resolution
+  ↓
+Onboarding status from profiles.onboarding_status
+  ↓
+Role-specific onboarding form
+  ↓
+Backend validation + RBAC + RLS
+  ↓
+Profile persisted
+  ↓
+Correct dashboard
+
+A newly registered account has onboarding_status = NOT_STARTED and is routed to
+its onboarding form; the dashboards are reachable only once the profile is
+COMPLETED. See docs/API/onboarding.md for the API contract.
+
+One migration is outstanding — see "Database Setup" below.
 
 Prototype disclaimer
 

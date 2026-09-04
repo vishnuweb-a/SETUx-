@@ -2,7 +2,14 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { errorHandler, requestContext } from '../../src/middleware/index.js';
-import { ForbiddenError, NotFoundError, ValidationError } from '../../src/shared/errors/index.js';
+import {
+  AppError,
+  ERROR_CODES,
+  ForbiddenError,
+  NotFoundError,
+  OnboardingValidationError,
+  ValidationError,
+} from '../../src/shared/errors/index.js';
 
 const buildApp = (thrown: unknown) => {
   const app = express();
@@ -30,6 +37,33 @@ describe('errorHandler', () => {
     const response = await request(buildApp(error)).get('/boom').expect(400);
 
     expect(response.body.error.details).toEqual({ 'body.name': 'Required' });
+  });
+
+  it('includes field details for an OnboardingValidationError', async () => {
+    const error = new OnboardingValidationError('Please correct the highlighted fields.', {
+      organizationCode: 'Not registered.',
+    });
+
+    const response = await request(buildApp(error)).get('/boom').expect(422);
+
+    expect(response.body.error.code).toBe('ONBOARDING_VALIDATION_ERROR');
+    expect(response.body.error.details).toEqual({ organizationCode: 'Not registered.' });
+  });
+
+  it('withholds details from an error that does not declare them client-safe', async () => {
+    // Details are opt-in: an error carrying internal diagnostics must not have
+    // them serialised into the response just because the field is populated.
+    const error = new AppError({
+      statusCode: 409,
+      code: ERROR_CODES.CONFLICT,
+      message: 'The request conflicts with the current state.',
+      details: { constraint: 'citizen_profiles_government_id_key', table: 'citizen_profiles' },
+    });
+
+    const response = await request(buildApp(error)).get('/boom').expect(409);
+
+    expect(response.body.error.details).toBeUndefined();
+    expect(JSON.stringify(response.body)).not.toContain('citizen_profiles');
   });
 
   it('reports an unexpected error as a generic INTERNAL_ERROR', async () => {

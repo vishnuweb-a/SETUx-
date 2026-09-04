@@ -64,6 +64,7 @@ history. Never change schema through the dashboard alone.
 | 3 | `20260829090200_setux_catalogue.sql` | `services`, `data_sources`, `service_requirements` |
 | 4 | `20260829090300_setux_applications.sql` | `applications` + the 8 application-scoped tables, application-number generator |
 | 5 | `20260829090400_setux_rls.sql` | `private` helper schema, RLS enablement, 35 policies |
+| 6 | `20260903090000_setux_onboarding_functions.sql` | Phase 4: `complete_citizen_onboarding()`, `complete_government_onboarding()` — atomic onboarding completion. **Not yet applied to the shared project**; the backend falls back to two ordered writes until it is. |
 
 They are ordered by foreign-key dependency and apply cleanly to an empty
 database in filename order.

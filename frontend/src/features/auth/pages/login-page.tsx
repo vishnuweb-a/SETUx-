@@ -10,7 +10,7 @@ import { PasswordInput } from '../components/password-input';
 import { useAuth } from '../hooks/use-auth';
 import { toAuthErrorMessage } from '../utils/auth-error-message';
 import { USER_ROLES, type UserRole } from '../types/auth.types';
-import { landingPathForRole } from '../utils/landing-path';
+import { landingPathForUser } from '@/features/onboarding';
 
 /**
  * The SetuX authentication screen.
@@ -41,9 +41,11 @@ export function LoginPage() {
   // sign-in attempt, so it is cleared as soon as the user starts over.
   useEffect(() => clearSessionEndReason, [clearSessionEndReason]);
 
-  // Someone already signed in has no business on the login screen.
+  // Someone already signed in has no business on the login screen. The
+  // destination accounts for onboarding, so a half-set-up account resumes its
+  // form instead of bouncing off a dashboard guard.
   if (status === 'authenticated' && user) {
-    return <Navigate to={landingPathForRole(user.role)} replace />;
+    return <Navigate to={landingPathForUser(user)} replace />;
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {

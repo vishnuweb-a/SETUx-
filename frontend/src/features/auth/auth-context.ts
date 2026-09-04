@@ -22,6 +22,16 @@ export interface AuthContextValue {
    */
   readonly signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   readonly signOut: () => Promise<void>;
+  /**
+   * Re-reads the authenticated user from the backend.
+   *
+   * Needed when a server-side fact about the user changes during the session —
+   * completing onboarding is the Phase 4 case. The guard routes on
+   * `user.onboardingStatus`, so it has to be refreshed from `/auth/me` rather
+   * than patched locally: a locally edited status would be exactly the
+   * client-controlled onboarding state the trust model forbids.
+   */
+  readonly refreshUser: () => Promise<void>;
   /** Clears the "session expired" notice once it has been shown. */
   readonly clearSessionEndReason: () => void;
 }

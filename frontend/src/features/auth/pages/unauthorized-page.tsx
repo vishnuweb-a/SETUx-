@@ -2,7 +2,7 @@ import { ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../hooks/use-auth';
-import { landingPathForRole } from '../utils/landing-path';
+import { landingPathForUser } from '@/features/onboarding';
 
 /**
  * Shown when a signed-in user opens a route their role does not admit.
@@ -28,7 +28,7 @@ export function UnauthorizedPage() {
       </div>
 
       <Button asChild>
-        <Link to={user ? landingPathForRole(user.role) : '/login'}>
+        <Link to={user ? landingPathForUser(user) : '/login'}>
           {user ? 'Back to your dashboard' : 'Go to sign in'}
         </Link>
       </Button>

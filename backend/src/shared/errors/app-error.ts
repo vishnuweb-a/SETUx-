@@ -7,6 +7,15 @@ export interface AppErrorOptions {
   readonly details?: unknown;
   readonly retryable?: boolean;
   readonly cause?: unknown;
+  /**
+   * Marks `details` as safe to return to the client.
+   *
+   * Opt-in, because `details` on an arbitrary error can carry constraint names,
+   * row values or driver output. Only errors whose details are a deliberate,
+   * client-facing field map set this — the error handler withholds `details`
+   * from everything else.
+   */
+  readonly exposeDetails?: boolean;
 }
 
 /**
@@ -21,14 +30,25 @@ export class AppError extends Error {
   readonly code: ErrorCode;
   readonly details: unknown;
   readonly retryable: boolean;
+  /** Whether the error handler may include `details` in the response body. */
+  readonly exposeDetails: boolean;
 
-  constructor({ statusCode, code, message, details, retryable = false, cause }: AppErrorOptions) {
+  constructor({
+    statusCode,
+    code,
+    message,
+    details,
+    retryable = false,
+    cause,
+    exposeDetails = false,
+  }: AppErrorOptions) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = new.target.name;
     this.statusCode = statusCode;
     this.code = code;
     this.details = details;
     this.retryable = retryable;
+    this.exposeDetails = exposeDetails;
     Error.captureStackTrace?.(this, new.target);
   }
 }
@@ -36,7 +56,15 @@ export class AppError extends Error {
 /** Input failed validation. `details` carries field-level information. */
 export class ValidationError extends AppError {
   constructor(message = 'The request payload is invalid.', details?: unknown) {
-    super({ statusCode: 400, code: ERROR_CODES.VALIDATION_ERROR, message, details });
+    super({
+      statusCode: 400,
+      code: ERROR_CODES.VALIDATION_ERROR,
+      message,
+      details,
+      // Field-level errors produced by `validateRequest` from Zod issues — a
+      // `{ field: message }` map built for the form to display.
+      exposeDetails: true,
+    });
   }
 }
 
@@ -128,5 +156,96 @@ export class InvalidCredentialsError extends AppError {
 export class ProfileNotFoundError extends AppError {
   constructor(message = 'No SetuX profile is associated with this account.') {
     super({ statusCode: 403, code: ERROR_CODES.PROFILE_NOT_FOUND, message });
+  }
+}
+
+/**
+ * An onboarding payload was rejected by a business rule that schema validation
+ * cannot express — an unknown organization code, a department that does not
+ * belong to it, a name that contradicts the registered organization.
+ *
+ * Separate from {@link ValidationError} only by its code, so the onboarding
+ * form can map the failure back to a field (onboarding.md §38).
+ */
+export class OnboardingValidationError extends AppError {
+  constructor(
+    message = 'Please correct the highlighted fields.',
+    details?: Record<string, string>,
+  ) {
+    super({
+      statusCode: 422,
+      code: ERROR_CODES.ONBOARDING_VALIDATION_ERROR,
+      message,
+      details,
+      exposeDetails: true,
+    });
+  }
+}
+
+/**
+ * The caller has already completed onboarding and is attempting to create their
+ * profile again (onboarding.md §26).
+ *
+ * A 409 rather than an overwrite: a second POST is either a double submit or an
+ * attempt to replace a completed profile, and neither should silently rewrite
+ * persisted identity data. Corrections go through PATCH while onboarding is
+ * still in progress.
+ */
+export class OnboardingAlreadyCompletedError extends AppError {
+  constructor(message = 'Your SetuX profile is already completed.') {
+    super({
+      statusCode: 409,
+      code: ERROR_CODES.ONBOARDING_ALREADY_COMPLETED,
+      message,
+    });
+  }
+}
+
+/**
+ * The onboarding flow addressed does not match the role SetuX resolved for the
+ * caller — a citizen posting to `/onboarding/government`, or the reverse
+ * (onboarding.md §27).
+ *
+ * Distinct from {@link ForbiddenError} by code alone so the client can tell
+ * "wrong flow for your account" from "not permitted at all". The role in the
+ * message is the caller's own, which they already know.
+ */
+export class OnboardingRoleMismatchError extends AppError {
+  constructor(message = 'This onboarding flow is not available for your account role.') {
+    super({
+      statusCode: 403,
+      code: ERROR_CODES.ONBOARDING_ROLE_MISMATCH,
+      message,
+    });
+  }
+}
+
+/**
+ * An identifier that must be unique is already registered to someone else — a
+ * government ID, or an employee ID within an organization (onboarding.md §30).
+ *
+ * The message never says who holds it: that would turn onboarding into a
+ * lookup oracle for government IDs.
+ */
+export class OnboardingDuplicateIdentifierError extends AppError {
+  constructor(message: string, details?: Record<string, string>) {
+    super({
+      statusCode: 409,
+      code: ERROR_CODES.ONBOARDING_DUPLICATE_IDENTIFIER,
+      message,
+      details,
+      exposeDetails: true,
+    });
+  }
+}
+
+/** No onboarding profile exists yet for the caller (onboarding.md §38). */
+export class OnboardingNotFoundError extends AppError {
+  constructor(message = 'No onboarding profile exists for this account yet.') {
+    super({
+      statusCode: 404,
+      code: ERROR_CODES.ONBOARDING_NOT_FOUND,
+      message,
+    });
   }
 }

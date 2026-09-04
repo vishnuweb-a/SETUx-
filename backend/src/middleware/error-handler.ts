@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { config } from '../config/index.js';
 import { HTTP_STATUS } from '../shared/constants/index.js';
-import { AppError, ERROR_CODES, ValidationError } from '../shared/errors/index.js';
+import { AppError, ERROR_CODES } from '../shared/errors/index.js';
 import { logger } from '../shared/logger/index.js';
 import { errorBody } from '../shared/utils/index.js';
 
@@ -38,7 +38,9 @@ export const errorHandler = (
         code: err.code,
         message: err.message,
         requestId,
-        details: err instanceof ValidationError ? err.details : undefined,
+        // Only errors that explicitly declare their details client-safe
+        // contribute them; everything else reports code and message alone.
+        details: err.exposeDetails ? err.details : undefined,
       }),
     );
     return;
