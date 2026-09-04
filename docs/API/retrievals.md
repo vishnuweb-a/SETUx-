@@ -1,11 +1,40 @@
 SetuX — Data Retrieval API Specification
 
-Version: 1.0
+Version: 1.1
 Project: SetuX SIH MVP
-Module: Fake DigiLocker Retrieval
+Module: Government Data Retrieval
 Backend: Supabase + PostgreSQL
 Architecture: Modular Monolith
 API Version: /api/v1
+
+Phase 9 implementation profile (2026-09-05)
+
+Phase 8 proved the retrieval pipeline with one provider. Phase 9 extends it to
+every simulated government system SetuX seeds, WITHOUT adding a second pipeline:
+
+  MOCK_IDENTITY_API   → fake identity registry      → IDENTITY
+  MOCK_EDUCATION_API  → fake education department   → EDUCATION_RECORD
+  MOCK_INCOME_API     → fake revenue department     → INCOME_RECORD
+  DIGILOCKER_MOCK     → fake DigiLocker (Phase 8)   → BANK_DETAILS,
+                                                      COMMUNITY_RECORD
+
+The API surface is UNCHANGED. No new endpoint, no new request field, no new
+error code. A connector is added by registering it against a `data_sources.code`
+in `backend/src/connectors/connector.registry.ts`; the retrieval service was not
+modified to accommodate any of them, which is the property the connector
+boundary exists to provide.
+
+Consequences for existing behaviour:
+
+  - `NOT_SUPPORTED` no longer appears for the four seeded sources. It remains
+    the answer for any source with no registered connector.
+  - Consent stays SOURCE-LEVEL and per-source. A grant for one government
+    system authorizes that system only; it never authorizes another.
+  - Idempotency stays REQUIREMENT-scoped. One completed requirement does not
+    block a different requirement, including one served by the same source.
+
+RETRIEVAL IS STILL NOT VERIFICATION. Four systems answering is still four
+retrievals, not a verification. See §"Phase boundary" below.
 
 Phase 8 implementation profile (2026-09-04)
 
@@ -115,7 +144,7 @@ Response:
   CONSENT_DENIED    citizen refused                        → offer nothing
   COMPLETED         already retrieved                      → show the result
   RETRYABLE         last attempt failed                    → offer a retry
-  NOT_SUPPORTED     no connector for that source yet       → explain, offer nothing
+  NOT_SUPPORTED     no connector registered for the source → explain, offer nothing
 
 The client renders this. It never computes it: deciding locally whether a
 retrieval is permitted would put an authorization judgement in the browser.
@@ -233,3 +262,55 @@ circumstances.
 
 Both Phase 8 functions are `security invoker`, are REVOKEd from `public`, `anon`
 and `authenticated`, and are GRANTed to `service_role` alone.
+
+--------------------------------------------------------------------------------
+9. Registered connectors (Phase 9)
+--------------------------------------------------------------------------------
+
+Connector selection is database-driven. The client names a requirement; the
+server derives the source from `service_requirements.data_source_id`, and the
+connector from `data_sources.code`. No request field selects a provider, and
+none is accepted — `connector`, `connectorName`, `provider`, `providerUrl` and
+`sourceCode` are all rejected by `.strict()` with 400.
+
+  data_sources.code    Connector                  Requirement codes served
+  ------------------------------------------------------------------------------
+  DIGILOCKER_MOCK      FakeDigiLockerConnector    BANK_DETAILS, COMMUNITY_RECORD
+  MOCK_IDENTITY_API    FakeIdentityConnector      IDENTITY
+  MOCK_EDUCATION_API   FakeEducationConnector     EDUCATION_RECORD
+  MOCK_INCOME_API      FakeIncomeConnector        INCOME_RECORD
+
+A requirement code outside a connector's own set is refused with
+`UNSUPPORTED_REQUIREMENT` rather than answered with a plausible invention, so a
+connector can never supply another source's data.
+
+Normalized field keys are disjoint across providers (`identity*`, `education*`,
+`income*`, `bank*`/`community*`), so one provider's result cannot overwrite
+another's in `application_data`.
+
+Every connector is SIMULATED and in-process:
+
+  - no HTTP client, no base URL, no credential, no environment configuration;
+  - deterministic — the same request always yields the same result;
+  - synthetic data only, with `SYNTH-` references and "(Simulated)" issuers;
+  - nothing resembling a real Aadhaar, PAN or passport number.
+
+Failure is a construction-time behaviour (`CONNECTOR_BEHAVIOUR.ALWAYS_FAIL`),
+reachable from tests and a scripted demo but never from a request body. There is
+no `forceFailure` flag; sending one is a 400.
+
+--------------------------------------------------------------------------------
+10. Phase boundary — retrieval is not verification
+--------------------------------------------------------------------------------
+
+This holds however many government systems have answered:
+
+  - `applications.status` stays SUBMITTED;
+  - `verifications` stays empty;
+  - `application_reviews` stays empty;
+  - provider-sourced `application_data` keeps `verification_status = PENDING`;
+  - `CITIZEN_DECLARATION` rows are never overwritten by a retrieval.
+
+The UI says "Retrieved", never "Verified". Verification, the
+UNDER_VERIFICATION/VERIFICATION transition and officer review belong to
+Phase 10.

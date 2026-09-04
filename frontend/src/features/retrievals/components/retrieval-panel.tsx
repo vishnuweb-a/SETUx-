@@ -80,8 +80,11 @@ export function RetrievalPanel({ applicationId }: { readonly applicationId: stri
             key={item.requirementId}
             item={item}
             applicationId={applicationId}
-            isBusy={create.isPending}
-            pendingId={create.isPending ? create.variables : null}
+            // Only the row actually being fetched shows a pending state. A
+            // shared flag would freeze every other government system while one
+            // is answering, which is exactly wrong once an application spans
+            // four of them (Phase 9 §45).
+            isFetching={create.isPending && create.variables === item.requirementId}
             error={create.variables === item.requirementId ? create.error : null}
             onFetch={() => create.mutate(item.requirementId)}
           />
@@ -102,19 +105,16 @@ export function RetrievalPanel({ applicationId }: { readonly applicationId: stri
 function RetrievalRow({
   item,
   applicationId,
-  isBusy,
-  pendingId,
+  isFetching,
   error,
   onFetch,
 }: {
   readonly item: RetrievalItem;
   readonly applicationId: string;
-  readonly isBusy: boolean;
-  readonly pendingId: string | null;
+  readonly isFetching: boolean;
   readonly error: unknown;
   readonly onFetch: () => void;
 }) {
-  const isFetching = pendingId === item.requirementId;
   const canFetch = item.availability === 'AVAILABLE' || item.availability === 'RETRYABLE';
 
   return (
@@ -176,9 +176,9 @@ function RetrievalRow({
           <Button
             type="button"
             size="sm"
-            // Disabled while any row is fetching, so two providers are never
-            // called at once from one page.
-            disabled={isBusy}
+            // Only this row's own request disables it. Another source being
+            // slow must not block this one (Phase 9 §45).
+            disabled={isFetching}
             // aria-busy communicates the pending state to assistive technology,
             // which a disabled button and a changed label alone do not.
             aria-busy={isFetching}
@@ -188,7 +188,13 @@ function RetrievalRow({
               ? 'Fetching…'
               : item.availability === 'RETRYABLE'
                 ? 'Try again'
-                : 'Fetch from ' + item.source}
+                : `Fetch from ${item.source}`}
+            {/* An application now spans several government systems, so several
+                of these buttons sit on one page and "Fetch from ..." alone can
+                repeat — two requirements may share one source. Naming the
+                record keeps every button distinct in a screen reader's list
+                (Phase 9 §44). */}
+            <span className="sr-only">: {item.information}</span>
           </Button>
         </div>
       )}

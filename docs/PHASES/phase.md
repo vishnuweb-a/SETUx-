@@ -654,6 +654,37 @@ Provider-specific formats are hidden behind connectors
 
 Failures do not crash the application
 
+Status: implemented (2026-09-05).
+
+Three connectors added — identity, education and income — joining the Phase 8
+fake DigiLocker, so every seeded `data_sources` row now resolves to a connector:
+
+  DIGILOCKER_MOCK     FakeDigiLockerConnector   BANK_DETAILS, COMMUNITY_RECORD
+  MOCK_IDENTITY_API   FakeIdentityConnector     IDENTITY
+  MOCK_EDUCATION_API  FakeEducationConnector    EDUCATION_RECORD
+  MOCK_INCOME_API     FakeIncomeConnector       INCOME_RECORD
+
+They were added by REGISTRATION alone. The retrieval service, the API contract
+and the database schema are unchanged, and Phase 9 required NO migration — the
+Phase 8 tables are already source-keyed. All four connectors are in-process,
+deterministic, credential-free and make zero network calls.
+
+Consent remains source-level: a grant for one government system authorizes that
+system only. Idempotency remains requirement-scoped.
+
+"Add simulated latency" was deliberately not done — it would slow the demo and
+make tests flaky for no architectural gain. Controlled failure is a
+construction-time behaviour, never reachable from a request body. Connector
+health checks and automatic retry remain deferred (government-connector.md §23,
+§24).
+
+Retrieval is still NOT verification. After all four systems answer, the
+application stays SUBMITTED, `verifications` and `application_reviews` stay
+empty, and provider data stays `verification_status = PENDING`. Phase 10 owns
+that transition.
+
+Contract: docs/API/retrievals.md
+
 Phase 10 — Scholarship Verification & Workflow
 
 Objective

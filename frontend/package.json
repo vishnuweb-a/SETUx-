@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "predev": "node ../scripts/check-backend.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

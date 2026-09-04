@@ -46,7 +46,21 @@ rather than failing at the first request that needs it. Import `config` from
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `VITE_API_BASE_URL` | no | `http://localhost:3000/api/v1` | Base URL for the API client |
+| `VITE_API_BASE_URL` | no | `/api/v1` | Where the API client sends requests |
+
+`VITE_API_BASE_URL` accepts either a path or an absolute URL. The default is the
+path `/api/v1`, which the Vite dev server proxies to the backend
+(`frontend/vite.config.ts`). Because the browser then calls the API on its own
+origin, no cross-origin request is made in development and CORS cannot break
+sign-in. Set an absolute URL (`https://api.example.com/api/v1`) to point the
+browser straight at a deployed backend; that origin must then appear in the
+backend's `CORS_ORIGIN`.
+
+Override the proxy target with `BACKEND_ORIGIN` when the backend runs elsewhere:
+
+```bash
+BACKEND_ORIGIN=http://127.0.0.1:4000 npm run dev:frontend
+```
 
 **Every `VITE_*` value is compiled into the bundle and is therefore public.**
 `SUPABASE_SERVICE_ROLE_KEY` and any other privileged credential must stay in
@@ -243,9 +257,31 @@ Open `http://localhost:5173`. The foundation screen calls the health endpoint
 through the API client and TanStack Query, and renders the loading, success and
 error states.
 
-If the screen reports an error, check that the backend is listening on the port
-in `VITE_API_BASE_URL`, and that the frontend's origin appears in the backend's
-`CORS_ORIGIN`.
+## "Could not reach the SetuX server"
+
+Almost always this means **the backend is not running**. The frontend serves
+fine on its own, so the app looks healthy right up until the first sign-in or
+registration, which is the first thing that needs the API.
+
+`npm run dev:frontend` probes the backend before Vite starts
+(`scripts/check-backend.mjs`) and prints a warning naming the cause when nothing
+answers. It is a warning, not an error: running the frontend alone is legitimate.
+
+Start both together from the repository root:
+
+```bash
+npm run dev
+```
+
+Then confirm the backend directly:
+
+```bash
+curl http://127.0.0.1:3000/api/v1/health
+```
+
+If the backend *is* running and calls still fail, check that `VITE_API_BASE_URL`
+points somewhere reachable, and — only when it is an absolute URL — that the
+frontend's origin appears in the backend's `CORS_ORIGIN`.
 
 ---
 
