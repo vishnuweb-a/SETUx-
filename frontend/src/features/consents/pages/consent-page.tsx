@@ -177,9 +177,14 @@ function ConsentReview({
       {consents.length > 0 && !payload.isDecisionRequired && (
         <Alert>
           <FileCheck2 aria-hidden />
-          <AlertDescription>
-            You have responded to every request. SetuX will not retrieve any information you did not
-            allow. Verification with the government systems begins in a later SetuX step.
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              You have responded to every request. SetuX will not retrieve any information you did
+              not allow.
+            </span>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/citizen/applications/${applicationId}`}>Back to application</Link>
+            </Button>
           </AlertDescription>
         </Alert>
       )}

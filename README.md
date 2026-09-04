@@ -856,7 +856,7 @@ migration workflow.
 Migration history
 
 All migrations through Phase 7 are applied to the linked Supabase project. Local
-and remote history match:
+and remote history match, through the Phase 8 migration:
 
 | # | Migration |
 |---|-----------|
@@ -864,11 +864,16 @@ and remote history match:
 | 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
 | 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
 | 8 | `20260904120000_setux_consent_management.sql` (Phase 7) |
+| 9 | `20260904150000_setux_fake_digilocker_retrieval.sql` (Phase 8) |
 
-Phases 4, 6 and 7 add no new table — each reuses the Phase 2 schema and adds
+Phases 4, 6, 7 and 8 add no new table — each reuses the Phase 2 schema and adds
 only PostgreSQL functions that make a multi-row operation atomic. Phase 7 also
 adds one nullable column, `consents.decided_at`, so a DENIED consent can record
-when the citizen decided without relying on `updated_at`.
+when the citizen decided without relying on `updated_at`. Phase 8 adds one
+nullable column, `data_retrievals.requirement_id`, so an attempt records which
+requirement it was satisfying, plus CHECK constraints and a partial unique index
+that makes a successful retrieval idempotent. Every Phase 8 statement is
+additive; the migration contains no DROP, TRUNCATE or DELETE.
 
 Schema changes go through migrations, never manual dashboard edits: to change
 something, add a new migration; never edit an applied one.
@@ -1178,7 +1183,7 @@ Database/Auth: Supabase
 Integrations: Fake Government Connectors
 Primary Use Case: Scholarship Workflow
 
-Current phase: Phase 7 implemented — consent management.
+Current phase: Phase 8 implemented — fake DigiLocker retrieval.
 
 Phase 0  Repository architecture and engineering foundation
 Phase 1  Frontend/backend foundation, health endpoint, logging, security middleware
@@ -1186,8 +1191,14 @@ Phase 2  Supabase schema: 17 tables, 9 enums, Row Level Security on every table
 Phase 3  Authentication and RBAC (Supabase Auth, server-side role resolution)
 Phase 4  Citizen and government officer onboarding
 
-Phases 0–7 are implemented through consent management. Phase 8 onward is
+Phases 0–8 are implemented through fake DigiLocker retrieval. Phase 9 onward is
 not implemented. See docs/PHASES/phase.md for the full phase plan.
+
+Phase 8 is a SIMULATED DigiLocker integration. There is no production DigiLocker
+integration, no OAuth, no credential, and no outbound network call — the
+connector returns synthetic fixture data from an in-process module. Retrieval is
+also NOT verification: a retrieved document has been fetched, not checked. See
+docs/API/retrievals.md for the contract and the Phase 8 → Phase 9 boundary.
 
 Phase 4 adds the first authenticated business vertical slice:
 

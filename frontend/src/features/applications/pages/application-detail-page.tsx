@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/feedback/error-state';
 import { useApplicationConsents } from '@/features/consents';
+import { RetrievalPanel } from '@/features/retrievals';
 import { useApplication, useSaveApplication, useSubmitApplication } from '../hooks/use-applications';
 import { applicationErrorMessage } from '../utils/application-error';
 import { ApplicationStatusBadge } from '../components/application-status-badge';
@@ -66,6 +67,10 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
   return <div className="mx-auto flex max-w-6xl flex-col gap-5">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><Link to="/citizen/applications" className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="size-4" aria-hidden />My Applications</Link><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Apply for {application.service.name}</h1><p className="mt-1 text-sm text-muted-foreground">{application.applicationNumber}</p></div><ApplicationStatusBadge status={application.status} /></header>
     {application.status === 'SUBMITTED' && <SubmittedApplicationNotice applicationId={application.id} />}
+    {/* Phase 8 — what SetuX has fetched on the citizen's behalf, and what it
+        still needs consent for. Only meaningful once submitted, which is also
+        the only state the endpoint serves. */}
+    {application.status === 'SUBMITTED' && <RetrievalPanel applicationId={application.id} />}
     <form onSubmit={handleSubmit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/25 bg-accent p-4"><ShieldCheck className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden /><div><h2 className="font-semibold">Your verified profile information is pre-filled</h2><p className="mt-1 text-sm text-muted-foreground">These details come from your completed SetuX profile and cannot be changed from this application.</p></div></div>
@@ -108,7 +113,7 @@ function SubmittedApplicationNotice({ applicationId }: { readonly applicationId:
   return <Alert>
     <CheckCircle2 aria-hidden />
     <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-      <span>Your application was submitted successfully and is now read-only.{hasDecidedConsents ? ' You have responded to every consent request.' : ' Verification begins in later SetuX steps.'}</span>
+      <span>Your application was submitted successfully and is now read-only.{hasDecidedConsents ? ' You have responded to every consent request. SetuX can now fetch the documents you allowed.' : ' Verification begins in later SetuX steps.'}</span>
       {hasDecidedConsents && <Button asChild size="sm" variant="outline"><Link to={`/citizen/applications/${applicationId}/consent`}>View consent decisions</Link></Button>}
     </AlertDescription>
   </Alert>;

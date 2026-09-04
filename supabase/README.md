@@ -45,6 +45,7 @@ Migrations apply in filename order:
 | 6 | `20260903090000_setux_onboarding_functions.sql` (Phase 4) |
 | 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
 | 8 | `20260904120000_setux_consent_management.sql` (Phase 7) |
+| 9 | `20260904150000_setux_fake_digilocker_retrieval.sql` (Phase 8) |
 
 The Phase 6 migration enforces one active application per citizen/service and
 adds service-role-only functions for atomic create, draft replacement, and
@@ -61,6 +62,28 @@ with an empty `search_path`, and neither is executable by `anon` or
 `authenticated` — consent decisions are reached only through the backend, which
 resolves the citizen identity server-side. The `consents` RLS policies are
 unchanged from Phase 2.
+
+The Phase 8 migration is applied to the linked project. It adds `data_retrievals.requirement_id` (nullable, so
+existing rows stay valid), two CHECK constraints — a failed attempt must carry an
+error code, a successful one must not — a CHECK tying
+`application_data.source_type` to the presence of `source_id`, and a partial
+unique index over `(application_id, requirement_id) WHERE status = 'SUCCESS'`
+that makes a successful retrieval idempotent under concurrent retries.
+
+It adds two service-role-only functions: `record_application_retrieval`, which
+writes the attempt, the normalized values and the timeline event in one
+transaction, and `record_application_retrieval_failure`, which records a failed
+attempt and deliberately writes no `application_data`. Both re-derive the full
+authorization chain — ownership, submitted state, the requirement's own data
+source, and a GRANTED consent for that source — independently of the caller.
+Both are `security invoker` with an empty `search_path`, and neither is
+executable by `anon` or `authenticated`.
+
+RLS is unchanged from Phase 2. `data_retrievals` and `application_data` keep
+SELECT-only policies: no browser session can write a retrieval result.
+
+Every Phase 8 statement is additive. The migration contains no DROP, TRUNCATE or
+DELETE, and each constraint has been validated against the live rows.
 
 Full documentation — schema, relationships, the RLS access model, environment
 setup and validation commands — is in
