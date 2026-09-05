@@ -300,8 +300,73 @@ describe('progress', () => {
       payload([item({ status: 'VERIFIED', reasonCode: 'RULE_MATCH' })], 'ALREADY_STARTED'),
     );
     renderPanel();
-    expect(await screen.findByText('Verification in progress')).toBeVisible();
+    expect(
+      await screen.findByText('Verification complete — awaiting officer review'),
+    ).toBeVisible();
+    // The stored status is still VERIFICATION. The heading above is a derived
+    // substate, and the raw database value must not appear either way.
     expect(screen.queryByText(/UNDER_VERIFICATION/u)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^VERIFICATION$/u)).not.toBeInTheDocument();
+  });
+
+  /**
+   * "Verification in progress" alongside "an officer reviews it next" described
+   * two different states at once, and a citizen whose checks had all finished
+   * was told SetuX was still working. The heading now follows the outcomes.
+   *
+   * A requirement that came back REQUIRES_ACTION or FAILED is FINISHED being
+   * checked automatically — that is precisely why a person is next — so neither
+   * keeps the panel in the "in progress" wording.
+   */
+  it('says verification is complete once every check has a final outcome', async () => {
+    // The live acceptance case: 2 verified, 1 needing a person.
+    mocks.fetch.mockResolvedValue(
+      payload(
+        [
+          item({ requirementCode: 'IDENTITY', status: 'VERIFIED', reasonCode: 'RULE_MATCH' }),
+          item({
+            requirementCode: 'COMMUNITY_RECORD',
+            information: 'Community Certificate',
+            status: 'REQUIRES_ACTION',
+            reasonCode: 'NO_RULE_DEFINED',
+          }),
+          item({ requirementCode: 'INCOME_RECORD', status: 'VERIFIED', reasonCode: 'RULE_MATCH' }),
+        ],
+        'ALREADY_STARTED',
+        { verifiedCount: 2, totalCount: 3 },
+      ),
+    );
+    renderPanel();
+
+    expect(
+      await screen.findByText('Verification complete — awaiting officer review'),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/SetuX has finished its automatic checks/u),
+    ).toBeVisible();
+    // The count is unchanged: it reports passed checks, and one did not pass.
+    expect(screen.getByText('2 of 3 checks passed')).toBeVisible();
+    // Still no decision claimed — completion is not approval.
+    expect(screen.queryByText(/approved/iu)).not.toBeInTheDocument();
+  });
+
+  it('still says in progress while a check has no outcome yet', async () => {
+    mocks.fetch.mockResolvedValue(
+      payload(
+        [
+          item({ requirementCode: 'IDENTITY', status: 'VERIFIED', reasonCode: 'RULE_MATCH' }),
+          item({ requirementCode: 'INCOME_RECORD', status: null, reasonCode: null }),
+        ],
+        'ALREADY_STARTED',
+        { verifiedCount: 1, totalCount: 2 },
+      ),
+    );
+    renderPanel();
+
+    expect(await screen.findByText('Verification in progress')).toBeVisible();
+    expect(
+      screen.getByText(/Your application is with SetuX for checking/u),
+    ).toBeVisible();
   });
 });
 

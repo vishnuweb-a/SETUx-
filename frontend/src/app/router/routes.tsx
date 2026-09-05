@@ -1,11 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { CitizenLayout } from '@/app/layouts/citizen-layout';
+import { GovernmentLayout } from '@/app/layouts/government-layout';
 import { RootLayout } from '@/app/layouts/root-layout';
 import { FoundationPage } from '@/app/pages/foundation-page';
 import { NotFoundPage } from '@/components/feedback/not-found-page';
 import {
   CitizenDashboardPage,
-  GovernmentDashboardPage,
   LoginPage,
   ProtectedRoute,
   RegisterPage,
@@ -22,6 +22,11 @@ import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scho
 import { HomeRedirect } from '@/app/pages/home-redirect';
 import { ApplicationDetailPage, ApplicationListPage } from '@/features/applications';
 import { ConsentPage } from '@/features/consents';
+import {
+  GovernmentDashboardPage,
+  ReviewDetailPage,
+  ReviewQueuePage,
+} from '@/features/government';
 
 /**
  * Application routes.
@@ -127,6 +132,41 @@ export const router = createBrowserRouter([
     ],
   },
 
+  // The signed-in officer area.
+  //
+  // Phase 11 gives the officer the shell from `reference/review.png`, so this
+  // branch sits beside `RootLayout` for the same reason the citizen branch does
+  // — nesting the two would render both chromes at once.
+  //
+  // The guards are unchanged and still apply in the same order: session and
+  // role first, completed onboarding second, so a half-onboarded officer is
+  // returned to their form rather than reaching the review queue. These guards
+  // decide what RENDERS; every one of these screens is independently authorized
+  // by the backend, so bypassing one in the browser yields an empty screen
+  // rather than another department's applications.
+  {
+    element: <ProtectedRoute allowedRoles={[USER_ROLES.GOVERNMENT_OFFICER]} />,
+    errorElement: <NotFoundPage />,
+    children: [
+      {
+        element: <RequireOnboarding />,
+        children: [
+          {
+            element: <GovernmentLayout />,
+            children: [
+              { path: '/government', element: <GovernmentDashboardPage /> },
+              { path: '/government/applications', element: <ReviewQueuePage /> },
+              {
+                path: '/government/applications/:applicationId',
+                element: <ReviewDetailPage />,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
   {
     path: '/',
     element: <RootLayout />,
@@ -134,18 +174,6 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomeRedirect /> },
       { path: 'foundation', element: <FoundationPage /> },
-
-      // Dashboards require a completed profile, so a user cannot skip
-      // onboarding by typing the dashboard URL (Phase 4 §39).
-      {
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.GOVERNMENT_OFFICER]} />,
-        children: [
-          {
-            element: <RequireOnboarding />,
-            children: [{ path: 'government', element: <GovernmentDashboardPage /> }],
-          },
-        ],
-      },
 
       // Authenticated, but not for this route. Behind ProtectedRoute with no
       // role restriction so a signed-out visitor is sent to sign in instead.

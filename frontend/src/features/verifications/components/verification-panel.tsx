@@ -113,7 +113,11 @@ function VerificationLead({
   return (
     <div className="grid gap-3 border-b border-border p-5 sm:p-6">
       {readiness === 'ALREADY_STARTED' && (
-        <VerificationProgress verifiedCount={verifiedCount} totalCount={totalCount} />
+        <VerificationProgress
+          verifiedCount={verifiedCount}
+          totalCount={totalCount}
+          items={payload.items}
+        />
       )}
 
       {readiness === 'EVIDENCE_INCOMPLETE' && (
@@ -179,14 +183,31 @@ function VerificationLead({
 function VerificationProgress({
   verifiedCount,
   totalCount,
+  items,
 }: {
   readonly verifiedCount: number;
   readonly totalCount: number;
+  readonly items: readonly VerificationItem[];
 }) {
+  // Whether the automated run has finished — not whether it approved anything.
+  // Every requirement carries a final outcome once a rule has evaluated it; a
+  // null status is the "not yet evaluated" case (verification.types.ts). A
+  // requirement that came back REQUIRES_ACTION or FAILED is FINISHED being
+  // checked automatically, which is exactly why it is now a person's job.
+  //
+  // Derived here rather than persisted: the database status stays VERIFICATION
+  // through both of these, because "checks running" and "waiting for an
+  // officer" are the same workflow state and inventing a lifecycle status to
+  // separate them would put a wording choice into the schema (§18).
+  const isComplete =
+    items.length > 0 && items.every((item) => item.status !== null && item.status !== 'PENDING');
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">Verification in progress</p>
+        <p className="text-sm font-medium">
+          {isComplete ? 'Verification complete — awaiting officer review' : 'Verification in progress'}
+        </p>
         <p className="text-sm text-muted-foreground">
           {verifiedCount} of {totalCount} checks passed
         </p>
@@ -205,7 +226,13 @@ function VerificationProgress({
         />
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
-        Your application is with SetuX for checking. A government officer reviews it next.
+        {isComplete
+          ? // Said plainly, because the previous wording claimed SetuX was still
+            // checking while also saying an officer was next — two different
+            // states in one sentence. Neither reading told the citizen that the
+            // automatic part was over.
+            'SetuX has finished its automatic checks. A government officer reviews your application next.'
+          : 'Your application is with SetuX for checking. A government officer reviews it next.'}
       </p>
     </div>
   );

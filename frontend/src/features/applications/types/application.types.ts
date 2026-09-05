@@ -8,10 +8,17 @@ import type { ScholarshipRequirement } from '@/features/scholarships';
  * documents' prose calls it "UNDER_VERIFICATION"; that is the same state under a
  * different name and is deliberately not introduced here as a second value.
  *
- * APPROVED and REJECTED are absent on purpose — Phase 11 owns them, and a type
- * that admitted them would invite UI that announces a decision no one has taken.
+ * APPROVED and REJECTED are the Phase 11 final states. They are reached ONLY by
+ * an officer recording a decision — never by a verification outcome, however
+ * complete. A citizen sees one of them because a person decided, and the two
+ * are the end of the lifecycle: nothing transitions out of them.
  */
-export type ApplicationStatus = 'DRAFT' | 'SUBMITTED' | 'VERIFICATION';
+export type ApplicationStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'VERIFICATION'
+  | 'APPROVED'
+  | 'REJECTED';
 
 export interface ApplicationServiceSummary {
   readonly id: string;

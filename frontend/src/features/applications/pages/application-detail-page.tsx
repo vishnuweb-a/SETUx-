@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, FileText, GraduationCap, ShieldCheck, ShieldQuestion } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, GraduationCap, ShieldCheck, ShieldQuestion, XCircle } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useBlocker, useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,10 +27,12 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
   const submit = useSubmitApplication(application.id);
   const isDraft = application.status === 'DRAFT';
   // Retrieval and verification are both meaningful from submission onward, and
-  // remain so while the application sits in VERIFICATION waiting for an
-  // officer. Keyed off the real status rather than a boolean the client
-  // derives, so a new lifecycle state cannot silently hide either panel.
-  const isUnderway = application.status === 'SUBMITTED' || application.status === 'VERIFICATION';
+  // remain so once an officer has decided: the panels are what EXPLAIN the
+  // outcome, and hiding them at APPROVED or REJECTED would leave a citizen
+  // looking at a decision with none of the evidence it was made from. Keyed off
+  // the real status rather than a boolean the client derives, so a new
+  // lifecycle state cannot silently hide either panel.
+  const isUnderway = application.status !== 'DRAFT';
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const error = save.error ?? submit.error;
 
@@ -73,6 +75,11 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
   return <div className="mx-auto flex max-w-6xl flex-col gap-5">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><Link to="/citizen/applications" className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="size-4" aria-hidden />My Applications</Link><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Apply for {application.service.name}</h1><p className="mt-1 text-sm text-muted-foreground">{application.applicationNumber}</p></div><ApplicationStatusBadge status={application.status} /></header>
     {application.status === 'SUBMITTED' && <SubmittedApplicationNotice applicationId={application.id} />}
+    {/* Phase 11 — the officer's decision, stated first because on a decided
+        application it is the most important thing on the page. */}
+    {(application.status === 'APPROVED' || application.status === 'REJECTED') && (
+      <DecisionNotice status={application.status} />
+    )}
     {/* Phase 8 — what SetuX has fetched on the citizen's behalf, and what it
         still needs consent for. It stays visible once verification has run: the
         citizen needs to see the evidence a check was made against, and hiding
@@ -128,6 +135,49 @@ function SubmittedApplicationNotice({ applicationId }: { readonly applicationId:
       {hasDecidedConsents && <Button asChild size="sm" variant="outline"><Link to={`/citizen/applications/${applicationId}/consent`}>View consent decisions</Link></Button>}
     </AlertDescription>
   </Alert>;
+}
+
+/**
+ * The final decision, in the citizen's words.
+ *
+ * Says what was decided and what it means for them. It deliberately does NOT
+ * restate the officer's remarks: those are stored on the review row under that
+ * table's own access rules, and surfacing free text written for an internal
+ * record into the citizen's view is a disclosure decision Phase 11 does not
+ * make on the officer's behalf.
+ *
+ * A rejection is reported plainly and without euphemism — a citizen who has not
+ * been approved needs to know that, not to be left guessing at a softened
+ * phrase — and without blame.
+ */
+function DecisionNotice({ status }: { readonly status: 'APPROVED' | 'REJECTED' }) {
+  const isApproved = status === 'APPROVED';
+
+  return (
+    <div
+      className={
+        isApproved
+          ? 'flex items-start gap-3 rounded-2xl border border-success/40 bg-success/10 p-5'
+          : 'flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-5'
+      }
+    >
+      {isApproved ? (
+        <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-success" aria-hidden />
+      ) : (
+        <XCircle className="mt-0.5 size-6 shrink-0 text-destructive" aria-hidden />
+      )}
+      <div>
+        <h2 className="font-semibold">
+          {isApproved ? 'Your application was approved' : 'Your application was not approved'}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isApproved
+            ? 'A government officer has reviewed your application and approved it. The information below is what was reviewed.'
+            : 'A government officer has reviewed your application and did not approve it. The information below is what was reviewed.'}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function ReadOnlyField({ label, name, autoComplete, value, className = '' }: { readonly label: string; readonly name: string; readonly autoComplete: string; readonly value: string; readonly className?: string }) {

@@ -92,6 +92,22 @@ export const ERROR_CODES = {
   VERIFICATION_ALREADY_STARTED: 'VERIFICATION_ALREADY_STARTED',
   VERIFICATION_ONBOARDING_REQUIRED: 'VERIFICATION_ONBOARDING_REQUIRED',
 
+  /**
+   * Officer review codes — Phase 11, `docs/API/review.md`.
+   *
+   * Both are 409s about the application's own state. There is deliberately no
+   * code here meaning "this citizen did not qualify": that is not an error, it
+   * is the officer's REJECTED decision, and it is returned as a successfully
+   * recorded outcome rather than a refused request.
+   *
+   * ALREADY_DECIDED is distinct from NOT_APPLICABLE because they mean different
+   * things to the officer: one is an application someone has already finished,
+   * the other has not reached them yet.
+   */
+  REVIEW_NOT_APPLICABLE: 'REVIEW_NOT_APPLICABLE',
+  REVIEW_ALREADY_DECIDED: 'REVIEW_ALREADY_DECIDED',
+  REVIEW_ONBOARDING_REQUIRED: 'REVIEW_ONBOARDING_REQUIRED',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
