@@ -74,6 +74,24 @@ export const ERROR_CODES = {
   RETRIEVAL_PROVIDER_FAILED: 'RETRIEVAL_PROVIDER_FAILED',
   RETRIEVAL_ONBOARDING_REQUIRED: 'RETRIEVAL_ONBOARDING_REQUIRED',
 
+  /**
+   * Verification codes — Phase 10, `docs/API/verification.md`.
+   *
+   * All four are 409s about the application's own state, never about the
+   * citizen's eligibility. There is deliberately no code here meaning "you did
+   * not qualify": a rule that finds evidence wanting is recorded as a FAILED
+   * verification and returned in the payload, because it is a finding to show
+   * the officer, not an error to refuse the request with (§15, §16).
+   *
+   * EVIDENCE_INCOMPLETE is separate from NOT_APPLICABLE because the citizen can
+   * act on it — retrieve the missing information — whereas NOT_APPLICABLE means
+   * the application is not at a stage where verification means anything.
+   */
+  VERIFICATION_NOT_APPLICABLE: 'VERIFICATION_NOT_APPLICABLE',
+  VERIFICATION_EVIDENCE_INCOMPLETE: 'VERIFICATION_EVIDENCE_INCOMPLETE',
+  VERIFICATION_ALREADY_STARTED: 'VERIFICATION_ALREADY_STARTED',
+  VERIFICATION_ONBOARDING_REQUIRED: 'VERIFICATION_ONBOARDING_REQUIRED',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',

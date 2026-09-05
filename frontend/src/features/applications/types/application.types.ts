@@ -1,6 +1,17 @@
 import type { ScholarshipRequirement } from '@/features/scholarships';
 
-export type ApplicationStatus = 'DRAFT' | 'SUBMITTED';
+/**
+ * The lifecycle states a citizen application reaches through Phase 10.
+ *
+ * VERIFICATION is the value the database `application_status` enum defines and
+ * the state an application enters when its evidence has been checked. The phase
+ * documents' prose calls it "UNDER_VERIFICATION"; that is the same state under a
+ * different name and is deliberately not introduced here as a second value.
+ *
+ * APPROVED and REJECTED are absent on purpose — Phase 11 owns them, and a type
+ * that admitted them would invite UI that announces a decision no one has taken.
+ */
+export type ApplicationStatus = 'DRAFT' | 'SUBMITTED' | 'VERIFICATION';
 
 export interface ApplicationServiceSummary {
   readonly id: string;

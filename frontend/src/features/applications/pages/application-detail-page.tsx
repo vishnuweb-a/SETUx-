@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/feedback/error-state';
 import { useApplicationConsents } from '@/features/consents';
 import { RetrievalPanel } from '@/features/retrievals';
+import { VerificationPanel } from '@/features/verifications';
 import { useApplication, useSaveApplication, useSubmitApplication } from '../hooks/use-applications';
 import { applicationErrorMessage } from '../utils/application-error';
 import { ApplicationStatusBadge } from '../components/application-status-badge';
@@ -25,6 +26,11 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
   const save = useSaveApplication(application.id);
   const submit = useSubmitApplication(application.id);
   const isDraft = application.status === 'DRAFT';
+  // Retrieval and verification are both meaningful from submission onward, and
+  // remain so while the application sits in VERIFICATION waiting for an
+  // officer. Keyed off the real status rather than a boolean the client
+  // derives, so a new lifecycle state cannot silently hide either panel.
+  const isUnderway = application.status === 'SUBMITTED' || application.status === 'VERIFICATION';
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const error = save.error ?? submit.error;
 
@@ -68,9 +74,14 @@ function ApplicationForm({ application }: { readonly application: NonNullable<Re
     <header className="flex flex-wrap items-start justify-between gap-3"><div><Link to="/citizen/applications" className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="size-4" aria-hidden />My Applications</Link><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Apply for {application.service.name}</h1><p className="mt-1 text-sm text-muted-foreground">{application.applicationNumber}</p></div><ApplicationStatusBadge status={application.status} /></header>
     {application.status === 'SUBMITTED' && <SubmittedApplicationNotice applicationId={application.id} />}
     {/* Phase 8 — what SetuX has fetched on the citizen's behalf, and what it
-        still needs consent for. Only meaningful once submitted, which is also
-        the only state the endpoint serves. */}
-    {application.status === 'SUBMITTED' && <RetrievalPanel applicationId={application.id} />}
+        still needs consent for. It stays visible once verification has run: the
+        citizen needs to see the evidence a check was made against, and hiding
+        it at VERIFICATION would leave the outcomes unexplained. */}
+    {isUnderway && <RetrievalPanel applicationId={application.id} />}
+    {/* Phase 10 — what SetuX concluded about that evidence. Below retrieval
+        because that is the order the work happens in, and because the citizen
+        must read "fetched" before "checked" for the distinction to land. */}
+    {isUnderway && <VerificationPanel applicationId={application.id} />}
     <form onSubmit={handleSubmit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/25 bg-accent p-4"><ShieldCheck className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden /><div><h2 className="font-semibold">Your verified profile information is pre-filled</h2><p className="mt-1 text-sm text-muted-foreground">These details come from your completed SetuX profile and cannot be changed from this application.</p></div></div>

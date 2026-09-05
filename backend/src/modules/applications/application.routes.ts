@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { applicationConsentsRoute } from '../consents/index.js';
 import { applicationRetrievalsRoute } from '../retrievals/index.js';
+import { applicationVerificationRoute } from '../verifications/index.js';
 import { requireAuth, requireRole } from '../../middleware/index.js';
 import { USER_ROLES } from '../auth/auth.types.js';
 import { asyncHandler } from '../../shared/utils/index.js';
@@ -21,3 +22,6 @@ applicationsRouter.use('/:applicationId/consents', applicationConsentsRoute);
 // Phase 8 — retrievals from the simulated government systems, performed only
 // under a consent granted above. Same inherited auth and role gate.
 applicationsRouter.use('/:applicationId/retrievals', applicationRetrievalsRoute);
+// Phase 10 — the verification of evidence already retrieved above. Reads stored
+// rows only; it never reaches a connector. Same inherited auth and role gate.
+applicationsRouter.use('/:applicationId/verification', applicationVerificationRoute);

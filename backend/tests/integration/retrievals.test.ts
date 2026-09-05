@@ -325,6 +325,50 @@ describe('application state', () => {
     expect(retrievals.recordRetrievalSuccess).not.toHaveBeenCalled();
   });
 
+  /**
+   * Phase 10 moves a verified application to VERIFICATION, and the evidence
+   * does not stop being the citizen's to look at when it does — it becomes what
+   * the verification outcomes were reached from. Sharing the stricter
+   * "must be SUBMITTED" guard with the write path made the documents panel fail
+   * with RETRIEVAL_NOT_APPLICABLE at exactly the moment the citizen needed it.
+   */
+  it('still serves the retrieval history once verification has moved the application', async () => {
+    applications.findApplicationById.mockResolvedValue({
+      ...SUBMITTED_APPLICATION,
+      status: 'VERIFICATION',
+    });
+    const response = await authorized('get');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
+
+  /**
+   * The other half of that split. An application under verification must not
+   * acquire evidence the run did not see, so fetching anything NEW stays
+   * restricted even though reading is now allowed.
+   */
+  it('refuses a new retrieval once the application is under verification', async () => {
+    applications.findApplicationById.mockResolvedValue({
+      ...SUBMITTED_APPLICATION,
+      status: 'VERIFICATION',
+    });
+    const response = await retrieve();
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('RETRIEVAL_NOT_APPLICABLE');
+    expect(retrievals.recordRetrievalSuccess).not.toHaveBeenCalled();
+  });
+
+  it('refuses to read the retrieval history for a draft', async () => {
+    applications.findApplicationById.mockResolvedValue({
+      ...SUBMITTED_APPLICATION,
+      status: 'DRAFT',
+      submitted_at: null,
+    });
+    const response = await authorized('get');
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('RETRIEVAL_NOT_APPLICABLE');
+  });
+
   it('does not advance the application status', async () => {
     await retrieve();
     // Phase 8 retrieves; it does not move the workflow. Nothing in this module
