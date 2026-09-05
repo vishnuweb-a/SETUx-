@@ -1191,8 +1191,31 @@ Phase 2  Supabase schema: 17 tables, 9 enums, Row Level Security on every table
 Phase 3  Authentication and RBAC (Supabase Auth, server-side role resolution)
 Phase 4  Citizen and government officer onboarding
 
-Phases 0–8 are implemented through fake DigiLocker retrieval. Phase 9 onward is
-not implemented. See docs/PHASES/phase.md for the full phase plan.
+Phases 0–11 are implemented, through the government officer's decision. Phase 12
+onward (notifications, disbursement, audit console) is not implemented. See
+docs/PHASES/phase.md for the full phase plan.
+
+Phase 11 completes the demonstrable end-to-end journey:
+
+Officer login
+  ↓
+Department-scoped review queue
+  ↓
+Application detail: retrieved records + verification results
+  ↓
+Approve / Reject (a human decision, with a reason for a rejection)
+  ↓
+Atomic commit: review row + final status + timeline event
+  ↓
+Citizen sees APPROVED / REJECTED
+
+Verification remains ADVISORY throughout. Nothing in Phase 11 derives a decision
+from a verification outcome: an application whose checks all passed still waits
+for an officer, and REQUIRES_ACTION is shown as "Needs officer review" rather
+than as a failure. A decision is final — the RPC holds the application row FOR
+UPDATE and a partial unique index permits one APPROVED/REJECTED review per
+application, so a finalized application cannot be decided again. See
+docs/API/review.md for the contract.
 
 Phase 8 is a SIMULATED DigiLocker integration. There is no production DigiLocker
 integration, no OAuth, no credential, and no outbound network call — the

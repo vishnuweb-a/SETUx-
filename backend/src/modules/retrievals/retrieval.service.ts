@@ -68,6 +68,31 @@ const assertSubmitted = (status: string): void => {
 };
 
 /**
+ * Whether the retrieval history may be READ.
+ *
+ * Deliberately wider than `assertSubmitted`, which gates *performing* a
+ * retrieval. Once Phase 10 moves an application to VERIFICATION the evidence
+ * does not stop being the citizen's to look at — it becomes more important to
+ * them, because it is what the verification outcomes were reached from. Sharing
+ * the stricter guard made the documents panel fail with
+ * RETRIEVAL_NOT_APPLICABLE at exactly the moment the citizen needed it.
+ *
+ * Fetching anything new stays restricted to SUBMITTED: an application under
+ * verification must not acquire evidence the run did not see.
+ */
+const READABLE_STATUSES = new Set<string>([APPLICATION_STATUS.SUBMITTED, 'VERIFICATION']);
+
+const assertRetrievalsReadable = (status: string): void => {
+  if (!READABLE_STATUSES.has(status)) {
+    throw new AppError({
+      statusCode: 409,
+      code: 'RETRIEVAL_NOT_APPLICABLE',
+      message: 'Documents are retrieved once an application has been submitted.',
+    });
+  }
+};
+
+/**
  * The most recent attempt per requirement.
  *
  * Rows arrive newest first, so the first row seen for a requirement is its
@@ -206,7 +231,7 @@ export const getApplicationRetrievals = async (
 ): Promise<ApplicationRetrievalPayload> => {
   assertCompletedCitizen(auth);
   const application = await getOwnApplicationOrThrow(auth, applicationId);
-  assertSubmitted(application.status);
+  assertRetrievalsReadable(application.status);
   return buildPayload({
     applicationId: application.id,
     applicationNumber: application.application_number,

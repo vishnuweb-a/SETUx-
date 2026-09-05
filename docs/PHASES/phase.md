@@ -729,6 +729,77 @@ Exit Criteria
 
 A submitted scholarship application can travel through the complete verification workflow.
 
+Status: complete (2026-09-05). Backend, citizen UI, migration applied to the
+live project, and live browser acceptance all done.
+
+The migration `20260905090000_setux_verification_workflow` is APPLIED. Note one
+bookkeeping discrepancy: it is recorded in `supabase_migrations.schema_migrations`
+under the server-assigned version `20260904203202`, because the tool used to
+apply it stamps its own timestamp rather than honouring the filename. The DDL is
+correct and complete; only the recorded version string differs from the local
+filename, and correcting that row was not permitted from this session.
+
+Two defects were found by live acceptance and fixed, neither visible to any
+mocked test:
+
+  1. `POST .../verification` answered 400 for a request with NO body, because
+     `express.json()` leaves `req.body` undefined and `z.object({}).strict()`
+     rejects undefined. The citizen's own "Start verification" click sends no
+     body, so the happy path was broken in the browser while every integration
+     test — which sends `{}` — passed. The schema now carries `.default({})`;
+     a body that IS supplied is still rejected for any unknown key.
+
+  2. Moving an application to VERIFICATION made the Phase 8 retrievals endpoint
+     answer 409, because reading the history shared the "must be SUBMITTED"
+     guard with performing a retrieval. The citizen lost the evidence panel at
+     exactly the moment the verification outcomes needed explaining. Reading is
+     now allowed at VERIFICATION; fetching anything new is still restricted to
+     SUBMITTED, so an application under verification cannot acquire evidence the
+     run did not see.
+
+A third, in the frontend: retrieving the last outstanding document left the
+verification overview showing stale "evidence outstanding" until a manual
+reload, because the retrieval mutation did not invalidate the verification
+query whose readiness it had just changed.
+
+Phase 10 is the first phase that JUDGES evidence rather than fetching it:
+
+  application_data → verification rules → verifications → VERIFICATION
+
+"Retrieve required information" in the task list above is deliberately NOT done
+by this phase. Phases 8 and 9 already retrieved it, and a verification run able
+to re-fetch would reach a provider around the consent gate that governs
+retrieval. The verification module holds no connector import, enforced by tests
+that read the module source and by a run completed with no connector registered.
+
+Two contract conflicts surfaced during implementation and were resolved against
+the schema rather than by invention:
+
+  1. `verifications.verification_type` allowed only IDENTITY/EDUCATION/INCOME,
+     but the seeded catalogue names five requirement codes and marks
+     COMMUNITY_RECORD (SCHOLARSHIP_MINORITY) and BANK_DETAILS
+     (SCHOLARSHIP_RESEARCH) as required. Neither could hold a verification row,
+     so those services could never finish verifying. The Phase 10 migration
+     widens the CHECK to the five requirement codes, keeping the two Phase 2
+     spellings permitted so the change stays non-destructive.
+
+  2. No eligibility threshold exists anywhere in SetuX — no income limit, no
+     marks minimum, no age bound, in neither `services`, `service_requirements`,
+     the seed, nor the docs. So no rule compares a number against one. The
+     education aggregate and the community category are retrieved and shown but
+     NOT judged; they resolve to REQUIRES_ACTION for the officer. Inventing a
+     cutoff would have meant SetuX writing eligibility policy.
+
+The lifecycle value is `VERIFICATION`, which is what the enum and
+database-schema.md §19 define. "UNDER_VERIFICATION" as used in the prose above
+is the same state under a different name; no second enum member was added.
+
+Application status after the run stays VERIFICATION. `application_reviews`
+remains empty and no application is APPROVED or REJECTED — Phase 11 owns the
+officer review, the decision, and the transition onward.
+
+Contract: docs/API/verification.md
+
 Phase 11 — Government Officer Dashboard
 
 Objective

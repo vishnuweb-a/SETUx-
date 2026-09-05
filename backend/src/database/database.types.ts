@@ -703,6 +703,28 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['data_retrievals']['Row'][];
       };
+      record_application_verification: {
+        Args: {
+          p_application_id: string;
+          p_citizen_id: string;
+          /** The rule engine's outcomes. Shape documented in the Phase 10 migration. */
+          p_outcomes: Json;
+        };
+        Returns: Database['public']['Tables']['verifications']['Row'][];
+      };
+      record_application_decision: {
+        Args: {
+          p_application_id: string;
+          /**
+           * The reviewer, resolved from the verified access token server-side.
+           * Never read from a request body (database-schema.md §37).
+           */
+          p_reviewer_id: string;
+          p_decision: Database['public']['Enums']['review_decision'];
+          p_remarks: string | null;
+        };
+        Returns: Database['public']['Tables']['application_reviews']['Row'][];
+      };
     };
     Enums: {
       user_role: 'CITIZEN' | 'GOVERNMENT_OFFICER';
