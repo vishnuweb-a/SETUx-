@@ -865,6 +865,16 @@ and remote history match, through the Phase 8 migration:
 | 7 | `20260904090000_setux_application_management.sql` (Phase 6) |
 | 8 | `20260904120000_setux_consent_management.sql` (Phase 7) |
 | 9 | `20260904150000_setux_fake_digilocker_retrieval.sql` (Phase 8) |
+| 10-12 | `20260905*` — verification workflow, verification type domain, officer review (Phases 10, 11) |
+| 13 | `20260907182417_setux_field_policies.sql` (Change & Correction Phase 1) |
+
+Migration 13 is the first of the Change & Correction Service and the first since
+Phase 2 to add a table: `field_policies`, plus the `field_editability` enum. It
+is reference configuration — which fields of a government record type a citizen
+may ask to correct — and holds no citizen data. RLS follows the catalogue
+posture: `select` for `authenticated` on active rows, and no write policy for
+any browser role. Every statement is additive; the migration contains no DROP,
+TRUNCATE or DELETE. See `docs/DATABASE/field-policies.md`.
 
 Phases 4, 6, 7 and 8 add no new table — each reuses the Phase 2 schema and adds
 only PostgreSQL functions that make a multi-row operation atomic. Phase 7 also

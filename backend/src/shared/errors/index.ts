@@ -1,6 +1,8 @@
 export {
   AppError,
   ConflictError,
+  FieldNotEditableError,
+  FieldPolicyNotFoundError,
   ForbiddenError,
   InvalidCredentialsError,
   InvalidTokenError,
