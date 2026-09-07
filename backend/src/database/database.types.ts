@@ -682,6 +682,97 @@ export type Database = {
         };
         Relationships: [];
       };
+      /**
+       * Change & Correction Service, Phase 2 — the citizen record registry.
+       *
+       * Citizen-scoped, and deliberately carries NO `application_id`: a citizen
+       * who has never applied for anything still has government records to
+       * browse and correct (arch §4.1). This is the projection of what a source
+       * holds NOW — `application_data` remains the frozen historical evidence
+       * for a decision already taken, and the two never merge.
+       */
+      citizen_records: {
+        Row: {
+          id: string;
+          citizen_id: string;
+          record_type: string;
+          data_source_id: string;
+          /** NULL for a provider such as the bank, which has no department. */
+          authority_department_id: string | null;
+          source_record_ref: string;
+          status: string;
+          source_version: string | null;
+          last_synced_at: string | null;
+          is_simulated: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          citizen_id: string;
+          record_type: string;
+          data_source_id: string;
+          authority_department_id?: string | null;
+          source_record_ref: string;
+          status?: string;
+          source_version?: string | null;
+          last_synced_at?: string | null;
+          is_simulated?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          citizen_id?: string;
+          record_type?: string;
+          data_source_id?: string;
+          authority_department_id?: string | null;
+          source_record_ref?: string;
+          status?: string;
+          source_version?: string | null;
+          last_synced_at?: string | null;
+          is_simulated?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      /**
+       * Change & Correction Service, Phase 2 — current values for a record.
+       *
+       * `field_key` shares its vocabulary with `field_policies.field_key`, so a
+       * value and the policy governing it join without translation.
+       */
+      citizen_record_fields: {
+        Row: {
+          id: string;
+          citizen_record_id: string;
+          field_key: string;
+          field_value: Json;
+          retrieved_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          citizen_record_id: string;
+          field_key: string;
+          field_value: Json;
+          retrieved_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          citizen_record_id?: string;
+          field_key?: string;
+          field_value?: Json;
+          retrieved_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {

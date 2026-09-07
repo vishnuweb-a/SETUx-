@@ -125,6 +125,28 @@ export const ERROR_CODES = {
   FIELD_POLICY_NOT_FOUND: 'FIELD_POLICY_NOT_FOUND',
   FIELD_NOT_EDITABLE: 'FIELD_NOT_EDITABLE',
 
+  /**
+   * Change & Correction Service, Phase 2 — the citizen record registry.
+   *
+   * CITIZEN_RECORD_ONBOARDING_REQUIRED mirrors
+   * APPLICATION_ONBOARDING_REQUIRED: a record registry is citizen-scoped, and a
+   * citizen who has not completed onboarding is not yet somebody SetuX can
+   * attribute government records to.
+   *
+   * CITIZEN_RECORD_UNSUPPORTED_TYPE is a 500 and never reaches a client's
+   * decision path. It fires only when a stored `record_type` falls outside the
+   * supported set — a configuration fault, not a caller mistake — and exists so
+   * that fault is loud rather than a response claiming a record type the
+   * client's own vocabulary does not contain.
+   *
+   * There is deliberately NO code here for "that record belongs to another
+   * citizen". Ownership is a predicate in the query, so another citizen's
+   * record is NOT_FOUND — indistinguishable from an id that never existed, and
+   * an error code naming the distinction would leak the very fact it hides.
+   */
+  CITIZEN_RECORD_ONBOARDING_REQUIRED: 'CITIZEN_RECORD_ONBOARDING_REQUIRED',
+  CITIZEN_RECORD_UNSUPPORTED_TYPE: 'CITIZEN_RECORD_UNSUPPORTED_TYPE',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
