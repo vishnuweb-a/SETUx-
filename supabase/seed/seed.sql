@@ -309,3 +309,57 @@ on conflict (record_type, field_key) do update
       authority         = excluded.authority,
       dependency_group  = excluded.dependency_group,
       active            = true;
+
+-- =============================================================================
+-- Phase 2 (Change & Correction Service) — record registry routing
+-- =============================================================================
+-- Source: docs/ARCHITECTURE/change-correction-service.md §20.6
+--         docs/DATABASE/citizen-records.md §5
+--
+-- Carried here as well as in 20260907185358_setux_citizen_records.sql, for the
+-- same reason the field policy seed is carried in both places: the linked
+-- project is migrated forward and never reset, while `supabase db reset`
+-- replays migrations and then runs THIS file. Both are idempotent on the same
+-- natural keys, so whichever runs second is a no-op.
+--
+-- These are ROUTING rows only — an organization, two departments and one data
+-- source. No citizen record and no field value is seeded here: those need a
+-- real `profiles.id`, which needs a Supabase auth user, which SQL cannot create
+-- (arch §21). Demo records are provisioned by
+-- `scripts/seed-change-correction-demo.mjs`.
+
+-- A synthetic whole-of-government parent. `departments.organization_id` is NOT
+-- NULL, and "Revenue Department, a department of the Department of Education"
+-- would be incoherent, so the non-education authorities get their own parent
+-- rather than being hung off EDU.
+insert into public.organizations (name, code, status)
+values ('Government of Demo State (Simulated)', 'DEMO_GOV', 'ACTIVE')
+on conflict (code) do update
+  set name = excluded.name,
+      status = excluded.status;
+
+-- The two authorities that do not otherwise exist. Higher Education and
+-- Minority Affairs are NOT re-created above — they are reused, because the
+-- officer fixture already belongs to Higher Education and forking the row would
+-- separate the department a target routes to from the one an officer is in.
+insert into public.departments (organization_id, name, code)
+select o.id, d.name, d.code
+from public.organizations o
+cross join (values
+  ('Identity Authority',  'IDENTITY_AUTHORITY'),
+  ('Revenue Department',  'REVENUE_DEPT')
+) as d (name, code)
+where o.code = 'DEMO_GOV'
+on conflict (organization_id, code) do update
+  set name = excluded.name;
+
+-- The synthetic banking provider. METADATA ONLY: no bank connector, step-up
+-- authentication, OTP or network call exists in this phase (arch §24). The row
+-- exists so a BANK_DETAILS record can name where it comes from. The existing
+-- DigiLocker BANK_DETAILS *document* requirement is unchanged.
+insert into public.data_sources (code, name, type, status)
+values ('MOCK_BANK_API', 'Demo Public Bank (Simulated)', 'MOCK_API', 'ACTIVE')
+on conflict (code) do update
+  set name = excluded.name,
+      type = excluded.type,
+      status = excluded.status;

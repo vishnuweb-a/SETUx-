@@ -261,6 +261,121 @@ Loading, empty, unavailable, and error states exist.
 
 Cross-citizen access is impossible.
 
+Status: COMPLETE (2026-09-08) --- backend and database only.
+
+The citizen record registry now exists, is citizen-scoped, and is
+populated for the synthetic demo citizen. Documented in:
+
+  docs/API/citizen-records.md
+  docs/DATABASE/citizen-records.md
+
+Delivered:
+
+1. Migration 20260907185358_setux_citizen_records.sql --- APPLIED to
+   the linked project. Adds citizen_records and citizen_record_fields,
+   plus the routing rows the authority map needs: a synthetic
+   organization DEMO_GOV, the departments Identity Authority and
+   Revenue Department, and the data source MOCK_BANK_API. Additive:
+   no DROP, TRUNCATE or DELETE, and no existing migration was
+   modified. application_data was not touched.
+
+   citizen_records deliberately has NO application_id (arch §4.1,
+   gap C1): a citizen who has never applied for a scholarship still
+   has government records to browse and correct.
+
+   Higher Education and Minority Affairs are REUSED, not re-created
+   --- the officer fixture already belongs to Higher Education, and
+   forking the row would separate the department a target routes to
+   from the department an officer belongs to.
+
+2. Identity --- the record's UUID is its identity; source_record_ref
+   is source metadata. Name, mobile and any Aadhaar-like number are
+   mutable field VALUES, never identity, because this is the
+   subsystem whose whole purpose is changing them.
+
+   Idempotency keys, per arch §22: unique
+   (citizen_id, record_type, data_source_id) on the record, and
+   unique (citizen_record_id, field_key) on the value.
+
+3. Bank --- MOCK_BANK_API is a data source row and nothing else.
+   authority_department_id is NULL for bank records because the bank
+   is a PROVIDER, not a department: it has no officer queue and never
+   will (arch §20.6, §8.1). No bank connector, step-up auth, OTP or
+   network call was built --- all Phase 10. The existing DigiLocker
+   BANK_DETAILS document requirement is unchanged.
+
+4. Backend module backend/src/modules/citizen-records/ --- routes →
+   controller → service → repository → schema → types, per
+   AGENT.md §7.
+
+5. API, read-only, authenticated, CITIZEN only:
+
+     GET /api/v1/citizen-records
+     GET /api/v1/citizen-records/:recordId
+
+   No mutation route is declared on the router --- not disabled,
+   absent --- and the repository exports no write function, so a
+   client cannot alter a source record even in principle.
+
+   Ownership is a PREDICATE in every query, never a check applied to
+   rows already read. A record belonging to another citizen is not
+   "denied", it is NOT FOUND --- same status, code and message as an
+   id that never existed.
+
+6. Field policy integration --- each field carries the Phase 1
+   policy governing it, read live from field_policies. Editability is
+   never stored on a record and never accepted from a client, and a
+   field with no active policy is changeable: false. This resolves
+   the requirement Phase 1 deferred: the UI can now explain a locked
+   field rather than hide it.
+
+7. Fixture --- scripts/seed-change-correction-demo.mjs provisions
+   five records and 29 field values for citizen@setux.test, all
+   sharing the synthetic holder name "Demo Old Name" (the
+   precondition for the Phase 4 dependency demo, arch §23).
+
+   Separate from seed-auth-users.mjs by design, and not
+   auto-provisioned on login or onboarding (arch §21 rejects that).
+   It never writes profiles.role or profiles.onboarding_status ---
+   the existing COMPLETED onboarding was preserved --- refuses any
+   address but the known fixture, refuses a non-CITIZEN account,
+   prints no credential, and refuses to write a field key that has no
+   field_policies row. Two live runs left exactly 5 records and 29
+   values.
+
+8. Security --- RLS enabled on both tables; citizen SELECT own only;
+   NO insert/update/delete policy for any browser role; anon has no
+   policy at all.
+
+   Officers get NOTHING here, deliberately: officer authority over a
+   record arises from a change target (arch §4.6), which this phase
+   does not create. Approximating it as "any record my department is
+   the authority for" would expose every citizen's education record
+   to every Higher Education officer. Probed live: demo citizen sees
+   5/29 and cannot insert or update; a second citizen, the officer
+   and anon each see 0/0.
+
+9. Tests --- 109 new: 17 service unit, 13 repository unit, 31
+   provisioner unit, 32 integration (including 13 adversarial), and
+   29 database tests run against the live project covering both
+   unique constraints, each CHECK, the embedded relationships, the
+   ownership predicate and the fixture that actually landed.
+
+Acceptance met: only the authenticated citizen's records are
+returned; cross-citizen access is impossible at three independent
+layers (query predicate, RLS policy, and the absence of any parameter
+naming a citizen). The "loading, empty, unavailable, and error
+states" criterion is a UI concern and is deliberately NOT met in this
+phase --- Phase 2 as scoped here is backend and database only, and
+the empty inventory, UNAVAILABLE status and error codes the UI needs
+are all present in the contract for it to render.
+
+Not implemented, per arch doc §25: change_requests, proposed values,
+the dependency engine, impact detection, target selection, change
+consent, officer change review, RecordUpdateConnector, notifications,
+the bank connector, and any record mutation API or source-system
+write. No frontend file was added or changed.
+
 Phase 3 --- Change Draft & Editable Form
 
 Objective
