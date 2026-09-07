@@ -241,3 +241,71 @@ on conflict (service_id, requirement_code) do update
       data_source_id = excluded.data_source_id,
       required = excluded.required,
       display_order = excluded.display_order;
+
+-- =============================================================================
+-- Change & Correction Service — Phase 1 — Editable field policy
+-- =============================================================================
+-- Source: docs/ARCHITECTURE/change-correction-service.md §11, §20.5, §25
+--
+-- `field_policies` is configuration in exactly the sense the tables above are:
+-- it describes what SetuX permits, and holds no citizen data. The rows are
+-- therefore seeded here, so a `supabase db reset` reproduces a working policy
+-- endpoint from an empty database.
+--
+-- The Phase 1 migration (`20260907182417_setux_field_policies.sql`) carries the
+-- SAME rows, because the linked project is migrated forward and never reset. If
+-- these two ever disagree, the migration is authoritative — it is what the live
+-- project actually ran. Both are idempotent and keyed on
+-- (record_type, field_key), so applying either after the other is a no-op.
+--
+-- The reasoning behind each editability decision lives in the migration, beside
+-- the rows, and is not repeated here.
+--
+-- Every value is SYNTHETIC: these are field NAMES and policy flags, never
+-- anybody's data.
+-- -----------------------------------------------------------------------------
+insert into public.field_policies (
+  record_type, field_key, editability, requires_evidence, requires_review,
+  authority, dependency_group
+)
+values
+  ('IDENTITY_RECORD', 'identityHolderName',        'CONDITIONALLY_EDITABLE', true,  true,  'Identity Authority', 'LEGAL_NAME'),
+  ('IDENTITY_RECORD', 'identityBirthYear',         'CONDITIONALLY_EDITABLE', true,  true,  'Identity Authority', null),
+  ('IDENTITY_RECORD', 'identityMobile',            'EDITABLE',               false, false, 'Identity Authority', 'CONTACT'),
+  ('IDENTITY_RECORD', 'identityAddress',           'EDITABLE',               false, false, 'Identity Authority', 'ADDRESS'),
+  ('IDENTITY_RECORD', 'identityRegistryReference', 'IMMUTABLE',              false, false, 'Identity Authority', null),
+  ('IDENTITY_RECORD', 'identityRecordStatus',      'IMMUTABLE',              false, false, 'Identity Authority', null),
+
+  ('INCOME_RECORD',   'incomeCertificateHolder',   'CONDITIONALLY_EDITABLE', true,  true,  'Revenue Department', 'LEGAL_NAME'),
+  ('INCOME_RECORD',   'incomeAddress',             'EDITABLE',               false, false, 'Revenue Department', 'ADDRESS'),
+  ('INCOME_RECORD',   'incomeBand',                'IMMUTABLE',              false, false, 'Revenue Department', null),
+  ('INCOME_RECORD',   'incomeCertificateNumber',   'IMMUTABLE',              false, false, 'Revenue Department', null),
+  ('INCOME_RECORD',   'incomeIssuingOffice',       'IMMUTABLE',              false, false, 'Revenue Department', null),
+  ('INCOME_RECORD',   'incomeAssessmentYear',      'IMMUTABLE',              false, false, 'Revenue Department', null),
+  ('INCOME_RECORD',   'incomeValidUntil',          'IMMUTABLE',              false, false, 'Revenue Department', null),
+
+  ('EDUCATION_RECORD', 'educationStudentName',         'CONDITIONALLY_EDITABLE', true,  true,  'Higher Education', 'LEGAL_NAME'),
+  ('EDUCATION_RECORD', 'educationEnrolmentNumber',     'IMMUTABLE',              false, false, 'Higher Education', null),
+  ('EDUCATION_RECORD', 'educationInstitution',         'IMMUTABLE',              false, false, 'Higher Education', null),
+  ('EDUCATION_RECORD', 'educationAggregatePercentage', 'IMMUTABLE',              false, false, 'Higher Education', null),
+  ('EDUCATION_RECORD', 'educationBoard',               'IMMUTABLE',              false, false, 'Higher Education', null),
+  ('EDUCATION_RECORD', 'educationResultYear',          'IMMUTABLE',              false, false, 'Higher Education', null),
+  ('EDUCATION_RECORD', 'educationEnrolmentStatus',     'IMMUTABLE',              false, false, 'Higher Education', null),
+
+  ('COMMUNITY_RECORD', 'communityCertificateHolder', 'CONDITIONALLY_EDITABLE', true,  true,  'Minority Affairs', 'LEGAL_NAME'),
+  ('COMMUNITY_RECORD', 'communityCategory',          'IMMUTABLE',              false, false, 'Minority Affairs', null),
+  ('COMMUNITY_RECORD', 'communityCertificateNumber', 'IMMUTABLE',              false, false, 'Minority Affairs', null),
+  ('COMMUNITY_RECORD', 'communityIssuingOffice',     'IMMUTABLE',              false, false, 'Minority Affairs', null),
+
+  ('BANK_DETAILS', 'bankAccountHolder', 'CONDITIONALLY_EDITABLE', true,  true,  'Demo Public Bank (Simulated)', 'LEGAL_NAME'),
+  ('BANK_DETAILS', 'bankAccountMasked', 'IMMUTABLE',              false, false, 'Demo Public Bank (Simulated)', null),
+  ('BANK_DETAILS', 'bankBranchCode',    'IMMUTABLE',              false, false, 'Demo Public Bank (Simulated)', null),
+  ('BANK_DETAILS', 'bankBranchName',    'IMMUTABLE',              false, false, 'Demo Public Bank (Simulated)', null),
+  ('BANK_DETAILS', 'bankAccountStatus', 'IMMUTABLE',              false, false, 'Demo Public Bank (Simulated)', null)
+on conflict (record_type, field_key) do update
+  set editability       = excluded.editability,
+      requires_evidence = excluded.requires_evidence,
+      requires_review   = excluded.requires_review,
+      authority         = excluded.authority,
+      dependency_group  = excluded.dependency_group,
+      active            = true;

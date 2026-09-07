@@ -108,6 +108,23 @@ export const ERROR_CODES = {
   REVIEW_ALREADY_DECIDED: 'REVIEW_ALREADY_DECIDED',
   REVIEW_ONBOARDING_REQUIRED: 'REVIEW_ONBOARDING_REQUIRED',
 
+  /**
+   * Editable field policy codes — Change & Correction Service Phase 1,
+   * `docs/API/field-policies.md`.
+   *
+   * An unknown or unsupported record type is NOT here: it is a malformed
+   * request parameter and is rejected as a VALIDATION_ERROR at the edge, before
+   * any query runs, exactly as an unknown service id is.
+   *
+   * FIELD_NOT_EDITABLE is a 409 and not a 403: the caller is entitled to ask,
+   * and the refusal is about the field's own nature rather than about who they
+   * are. Telling a citizen "you are forbidden" when the truth is "nobody may
+   * change this here, and the issuing authority owns it" would misdescribe the
+   * system and send them looking for a permission that does not exist.
+   */
+  FIELD_POLICY_NOT_FOUND: 'FIELD_POLICY_NOT_FOUND',
+  FIELD_NOT_EDITABLE: 'FIELD_NOT_EDITABLE',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',

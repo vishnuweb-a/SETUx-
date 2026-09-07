@@ -249,3 +249,53 @@ export class OnboardingNotFoundError extends AppError {
     });
   }
 }
+
+/**
+ * No active policy governs the field addressed
+ * (Change & Correction Service, Phase 1).
+ *
+ * Raised for both "no policy row exists" and "the policy that existed has been
+ * retired", and the message does not distinguish them, because they mean the
+ * same thing to the caller: SetuX has no authority to accept a correction to
+ * this field. The alternative — defaulting an ungoverned field to editable —
+ * would let a field become correctable by being forgotten, which is the exact
+ * failure the policy table exists to prevent (arch §11).
+ */
+export class FieldPolicyNotFoundError extends AppError {
+  constructor(message = 'No change policy is defined for this record field.') {
+    super({
+      statusCode: 404,
+      code: ERROR_CODES.FIELD_POLICY_NOT_FOUND,
+      message,
+    });
+  }
+}
+
+/**
+ * The field is IMMUTABLE: no citizen may request a correction to it here
+ * (Change & Correction Service, Phase 1).
+ *
+ * A 409 about the field's own nature, not a 403 about the caller — no role,
+ * consent or evidence would change the answer, so describing it as a permission
+ * failure would send the citizen looking for a permission that does not exist.
+ *
+ * `details` names the authority that owns the field, and is exposed
+ * deliberately: "this cannot be changed here, and here is who owns it" is the
+ * more useful answer, and it is the answer the UI is required to give
+ * (arch §11). The authority is reference data — a department or provider name
+ * — and never anybody's personal data.
+ */
+export class FieldNotEditableError extends AppError {
+  constructor(
+    message = 'This field cannot be changed through SetuX.',
+    details?: { readonly authority: string | null },
+  ) {
+    super({
+      statusCode: 409,
+      code: ERROR_CODES.FIELD_NOT_EDITABLE,
+      message,
+      details,
+      exposeDetails: true,
+    });
+  }
+}

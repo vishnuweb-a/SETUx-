@@ -633,6 +633,55 @@ export type Database = {
         };
         Relationships: [];
       };
+      /**
+       * Change & Correction Service, Phase 1 — editable field policy.
+       *
+       * Configuration keyed on `(record_type, field_key)`. No foreign key to
+       * any citizen-scoped table, deliberately: the policy is true of a kind of
+       * record, not of anybody's record.
+       */
+      field_policies: {
+        Row: {
+          id: string;
+          record_type: string;
+          field_key: string;
+          editability: Database['public']['Enums']['field_editability'];
+          requires_evidence: boolean;
+          requires_review: boolean;
+          authority: string | null;
+          dependency_group: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          record_type: string;
+          field_key: string;
+          editability: Database['public']['Enums']['field_editability'];
+          requires_evidence?: boolean;
+          requires_review?: boolean;
+          authority?: string | null;
+          dependency_group?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          record_type?: string;
+          field_key?: string;
+          editability?: Database['public']['Enums']['field_editability'];
+          requires_evidence?: boolean;
+          requires_review?: boolean;
+          authority?: string | null;
+          dependency_group?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -750,6 +799,8 @@ export type Database = {
       retrieval_status: 'PENDING' | 'IN_PROGRESS' | 'SUCCESS' | 'FAILED' | 'TIMEOUT' | 'RETRYING';
       data_source_type: 'DIGILOCKER' | 'GOVERNMENT_API' | 'LEGACY_SYSTEM' | 'MOCK_API';
       review_decision: 'APPROVED' | 'REJECTED' | 'REQUESTED_INFO';
+      /** field_policies.editability — Change & Correction Service, Phase 1. */
+      field_editability: 'EDITABLE' | 'CONDITIONALLY_EDITABLE' | 'IMMUTABLE';
     };
     CompositeTypes: Record<never, never>;
   };
