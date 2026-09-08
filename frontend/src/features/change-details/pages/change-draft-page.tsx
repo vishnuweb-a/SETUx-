@@ -1,4 +1,4 @@
-import { CircleCheck, Info } from 'lucide-react';
+import { ArrowRight, CircleCheck, Info } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -29,10 +29,11 @@ import type { ChangeDraftDetail } from '../types/change-draft.types';
  * of the draft — revising a request changes what is being asked for, never what
  * was true when it was asked.
  *
- * WHERE PHASE 4 STOPS. A saved draft is the end of this phase. The dependency
- * engine, the impact preview, target selection and consent are the next
- * stage's work and none of them exists; the screen says so rather than
- * offering a "Continue" that would lead nowhere.
+ * WHERE THE FLOW STOPS. Phase 5 added the onward step: from here the citizen
+ * can see which of their other records may hold the same details. What is still
+ * absent is everything after that — choosing which of them to correct, consent,
+ * and sending the request to a department — so the screen offers a link to a
+ * read-only preview rather than a "Continue" that would lead nowhere.
  */
 export function ChangeDraftPage() {
   const { changeRequestId = '' } = useParams<{ changeRequestId: string }>();
@@ -140,7 +141,7 @@ export function ChangeDraftPage() {
         saveLabel="Save changes"
         onSave={handleSave}
         onBack={() => navigate(`/citizen/change-details/${detail.sourceRecordId}`)}
-        footer={<PhaseBoundaryNotice />}
+        footer={<PhaseBoundaryNotice changeRequestId={detail.id} />}
       />
     </ChangeFormShell>
   );
@@ -164,25 +165,41 @@ function DraftSummary({ detail }: { readonly detail: ChangeDraftDetail }) {
 }
 
 /**
- * Where Phase 4 ends.
+ * Where the flow continues, and where it still stops.
  *
- * The honest alternative to a "Continue" button. Impact detection, target
- * selection and consent are the next stage, and a control that navigated to a
- * route that does not exist — or to a placeholder pretending to be that
- * stage — would misrepresent what SetuX can currently do.
+ * Phase 5 gives this screen its first real onward step: impact detection now
+ * exists, so "Check affected records" leads to a page that answers a question
+ * rather than to a placeholder. What is still absent is everything after it —
+ * choosing targets, consent, submission — and the notice keeps saying so, for
+ * the reason the Phase 4 version of it did: a control that navigated to a route
+ * which does not exist would misrepresent what SetuX can currently do.
+ *
+ * The link is deliberately not a primary "Continue": it does not advance a
+ * workflow, it opens a read-only preview, and nothing about pressing it changes
+ * the draft.
  */
-function PhaseBoundaryNotice() {
+function PhaseBoundaryNotice({ changeRequestId }: { readonly changeRequestId: string }) {
   return (
-    <Alert>
-      <Info aria-hidden />
-      <AlertTitle>What happens next is not built yet</AlertTitle>
-      <AlertDescription>
-        <p>
-          Choosing which other records this correction should apply to, giving consent and sending
-          the request to the responsible department are part of the next stage of this service. Your
-          draft is saved and you can come back to it from this page.
-        </p>
-      </AlertDescription>
-    </Alert>
+    <div className="flex flex-col gap-4">
+      <Button asChild variant="outline">
+        <Link to={`/citizen/change-details/drafts/${changeRequestId}/impact`}>
+          Check affected records
+          <ArrowRight aria-hidden />
+        </Link>
+      </Button>
+
+      <Alert>
+        <Info aria-hidden />
+        <AlertTitle>Nothing has been sent yet</AlertTitle>
+        <AlertDescription>
+          <p>
+            You can check which of your other records may hold the same details. Choosing which of
+            them to correct, giving consent and sending the request to the responsible department
+            are part of the next stage of this service. Your draft is saved and you can come back to
+            it from this page.
+          </p>
+        </AlertDescription>
+      </Alert>
+    </div>
   );
 }

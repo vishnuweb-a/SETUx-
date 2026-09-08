@@ -26,6 +26,7 @@ import {
   ChangeDetailsRecordPage,
   ChangeDetailsRecordsPage,
   ChangeDraftPage,
+  ChangeImpactPage,
 } from '@/features/change-details';
 import { ConsentPage } from '@/features/consents';
 import {
@@ -149,6 +150,15 @@ export const router = createBrowserRouter([
               {
                 path: '/citizen/change-details/drafts/:changeRequestId',
                 element: <ChangeDraftPage />,
+              },
+              // Phase 5 — the impact preview, a sub-route of the draft it
+              // describes. Keyed by the DRAFT's id for the same reason the
+              // draft screen is: the analysis is a property of that draft, so
+              // the URL opened tomorrow rebuilds the same page rather than
+              // depending on navigation state.
+              {
+                path: '/citizen/change-details/drafts/:changeRequestId/impact',
+                element: <ChangeImpactPage />,
               },
               {
                 path: '/citizen/change-details/:recordId',

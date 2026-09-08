@@ -240,17 +240,64 @@ describe.skipIf(!enabled)('retrieval repository queries against the live databas
 });
 
 describe.skipIf(!enabled)('seeded government sources', () => {
-  it('serves every ACTIVE data source with a registered connector', async () => {
+  it('serves every RETRIEVAL data source with a registered connector', async () => {
+    // The invariant is about sources the RETRIEVAL path can actually reach: a
+    // source named by a service requirement must have a connector, or that
+    // requirement is permanently unsatisfiable and the citizen sees "not
+    // available" forever. That is a seeding bug, and this test exists to catch
+    // it.
+    //
+    // It was previously written as "every ACTIVE source", which held only
+    // because every source happened to be a retrieval provider. MOCK_BANK_API
+    // (Change & Correction Phase 2) broke that coincidence: it is ACTIVE, and
+    // it deliberately has NO connector. It exists so the record registry can
+    // name where a bank record comes from — the bank is the authority for
+    // BANK_DETAILS as a correctable record — and no bank connector, OTP or
+    // step-up exists in any phase yet (arch §20.6, §8.1, §24).
+    //
+    // So the query, not the loop, is what narrows the set: sources are derived
+    // from the requirements that reference them, which is precisely the
+    // population the retrieval path uses.
+    const db = getDatabaseClient();
+    const { data, error } = await db
+      .from('service_requirements')
+      .select('data_sources(code)')
+      .not('data_source_id', 'is', null);
+
+    expect(error).toBeNull();
+
+    const retrievalSourceCodes = new Set(
+      (data ?? [])
+        .map((row) => (Array.isArray(row.data_sources) ? row.data_sources[0] : row.data_sources))
+        .filter((source): source is { code: string } => Boolean(source))
+        .map((source) => source.code),
+    );
+
+    // Still a real assertion: the seed must actually wire requirements to
+    // sources, so an empty set is a failure rather than a vacuous pass.
+    expect(retrievalSourceCodes.size).toBeGreaterThan(0);
+
+    for (const code of retrievalSourceCodes) {
+      expect(resolveConnector(code), `no connector for ${code}`).not.toBeNull();
+    }
+  });
+
+  it('leaves MOCK_BANK_API without a connector, deliberately', async () => {
+    // The other half of the rule above, pinned so the absence stays a decision
+    // rather than becoming an oversight somebody "fixes". A bank connector is
+    // not a Phase 4 or earlier concern; if one is ever added, this test should
+    // fail and be removed together with the phase that adds it.
     const { data, error } = await getDatabaseClient()
       .from('data_sources')
       .select('code, status')
-      .eq('status', 'ACTIVE');
+      .eq('code', 'MOCK_BANK_API')
+      .maybeSingle();
 
     expect(error).toBeNull();
-    expect((data ?? []).length).toBeGreaterThan(0);
-    for (const source of data ?? []) {
-      expect(resolveConnector(source.code), `no connector for ${source.code}`).not.toBeNull();
-    }
+    if (!data) return;
+
+    expect(data.status).toBe('ACTIVE');
+    expect(resolveConnector('MOCK_BANK_API')).toBeNull();
   });
 
   it('keeps every requirement code within the set its source connector serves', async () => {

@@ -34,7 +34,7 @@ wins.
    2   Citizen Record Registry                       COMPLETE
    3   Citizen Change Details Entry / Field Selection COMPLETE
    4   Change Draft & Editable Form                  COMPLETE
-   5   Dependency & Impact Detection Engine
+   5   Dependency & Impact Detection Engine          COMPLETE
    6   Impact Preview & Target Selection
    7   Change Consent Bundle
    8   Parent & Department-Specific Requests
@@ -466,6 +466,87 @@ Draft can be resumed.
 Server validates every requested field.
 
 Phase 5 --- Dependency & Impact Detection Engine
+
+Status: COMPLETE (2026-09-08).
+
+The dependency engine now exists as server-side configuration, and a
+citizen can see which of their other records a correction would affect.
+Documented in:
+
+  docs/FEATURES/dependency-impact-detection.md
+
+Delivered:
+
+1. Migration 20260908180115_setux_change_dependency_rules.sql ---
+   APPLIED to the linked project. Adds the enum change_impact_level
+   (REQUIRED / RECOMMENDED / OPTIONAL) and the table
+   change_dependency_rules, with RLS, a partial index on the engine's
+   only read, and the seeded rules. Additive: no DROP, TRUNCATE or
+   DELETE, and no existing migration was modified.
+
+   The column names deviate from arch §4.3 deliberately ---
+   source_record_type / source_field_key / target_record_type /
+   target_field_key / impact_level, matching the record_type and
+   field_key vocabulary Phase 1 made canonical, so the rule table
+   joins field_policies and citizen_records without translation.
+
+   The migration ends with a verification block that FAILS the
+   migration if any rule names a missing field_policies row, an
+   IMMUTABLE source that could never fire, or a departmental rule
+   that resolved no responsible department.
+
+2. Seeded rules --- the canonical name-change scenario of arch §23:
+
+     IDENTITY.identityHolderName
+       -> INCOME_RECORD       REQUIRED     Revenue Department
+       -> EDUCATION_RECORD    RECOMMENDED  Higher Education
+       -> COMMUNITY_RECORD    RECOMMENDED  Minority Affairs
+       -> BANK_DETAILS        OPTIONAL     (provider, no department)
+
+   plus IDENTITY.identityAddress -> INCOME_RECORD.incomeAddress
+   (RECOMMENDED), the one address rule the seeded policy set supports.
+
+   identityMobile and identityBirthYear are deliberately UNSEEDED: no
+   other seeded record holds either field, so a rule would be a
+   fabricated dependency. A mobile-number correction correctly yields
+   an EMPTY impact list.
+
+3. Backend module change-impact --- route/controller/service/repository.
+   GET /api/v1/change-requests/drafts/:changeRequestId/impact, mounted
+   on the existing change-requests router as a sub-resource of the
+   draft it describes, inheriting the same gate.
+
+   READ-ONLY: the repository contains no insert, update, upsert or
+   delete statement of any kind. No target row, no consent, no status
+   transition, no source-record write. Verified live --- all five demo
+   source values and their updated_at timestamps were identical before
+   and after the browser flow, and the draft stayed DRAFT with
+   updated_at == created_at.
+
+4. Merge semantics --- one entry per target record type, enforced
+   structurally by keying the accumulator on the type. When several
+   rules reach one target the STRONGEST level wins
+   (REQUIRED > RECOMMENDED > OPTIONAL), the merge is commutative, and
+   every rule's reason is preserved. Expansion is strictly single-hop,
+   so circular rules cannot cause unbounded processing.
+
+5. Frontend impact preview --- a read-only page at
+   /citizen/change-details/drafts/:changeRequestId/impact, reached from
+   the saved draft. One card per affected record with a badge carrying
+   an icon as well as colour, the rule's own citizen-facing reason, the
+   responsible department, and an explicit statement when the citizen
+   holds no such record.
+
+   NO checkboxes, radios or switches, and no consent, submit or send
+   control --- target selection is Phase 6, and the card component
+   takes no prop through which selection could be threaded in.
+
+Not implemented, per the phase boundary: target selection, pre-selected
+REQUIRED targets, consent screen, consent bundle, child consents,
+change_targets persistence, department routing, officer queue, officer
+review, approval/rejection, connector update, bank OTP,
+STEP_UP_REQUIRED, notifications, parent aggregation, APPLIED, and any
+source-record mutation. Exactly one new table exists.
 
 Objective
 

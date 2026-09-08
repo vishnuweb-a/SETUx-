@@ -363,3 +363,80 @@ on conflict (code) do update
   set name = excluded.name,
       type = excluded.type,
       status = excluded.status;
+
+-- -----------------------------------------------------------------------------
+-- Change & Correction Service — Phase 5 dependency rules
+-- -----------------------------------------------------------------------------
+-- Carried here as well as in 20260908180115_setux_change_dependency_rules.sql,
+-- for the same reason the field policies are: the migration keeps the linked
+-- project working (it is migrated forward, never reset), and this keeps a
+-- `db reset` producing the same configuration rather than an impact engine with
+-- no rules to evaluate.
+--
+-- These rules are the canonical name-change scenario (arch §23) plus the one
+-- address rule the seeded policy set supports. Each names a source and target
+-- field that exist in `field_policies` above, and each carries a citizen-facing
+-- reason. No rule asserts a law or a real government process — every one is a
+-- statement about which synthetic records in this prototype hold the same
+-- synthetic value.
+--
+-- The department LEFT JOIN is deliberate: BANK_DETAILS has no responsible
+-- department because the bank is a provider rather than a government office
+-- (arch §20.6, §8.1). This file seeds `HIGHER_ED` and `MINORITY_AFFAIRS` above,
+-- so all four departmental rules resolve here.
+--
+-- Idempotent on the natural key, exactly like every other insert in this file.
+insert into public.change_dependency_rules (
+  source_record_type, source_field_key,
+  target_record_type, target_field_key,
+  impact_level, responsible_department_id, reason
+)
+select
+  r.source_record_type, r.source_field_key,
+  r.target_record_type, r.target_field_key,
+  r.impact_level::public.change_impact_level,
+  d.id,
+  r.reason
+from (values
+  (
+    'IDENTITY_RECORD', 'identityHolderName',
+    'INCOME_RECORD',   'incomeCertificateHolder',
+    'REQUIRED', 'REVENUE_DEPT',
+    'Your income certificate is issued in the same name. If it is not updated too, the two records will disagree and the certificate may not be accepted.'
+  ),
+  (
+    'IDENTITY_RECORD',   'identityHolderName',
+    'EDUCATION_RECORD',  'educationStudentName',
+    'RECOMMENDED', 'HIGHER_ED',
+    'Your education record shows the same name. Updating it as well helps avoid a mismatch the next time your enrolment details are checked.'
+  ),
+  (
+    'IDENTITY_RECORD',   'identityHolderName',
+    'COMMUNITY_RECORD',  'communityCertificateHolder',
+    'RECOMMENDED', 'MINORITY_AFFAIRS',
+    'Your community certificate is issued in the same name. Updating it as well helps avoid a mismatch when the certificate is next used.'
+  ),
+  (
+    'IDENTITY_RECORD', 'identityHolderName',
+    'BANK_DETAILS',    'bankAccountHolder',
+    'OPTIONAL', null,
+    'Your bank account is held in the same name. This account is with a bank rather than a government department, so updating it is your choice.'
+  ),
+  (
+    'IDENTITY_RECORD', 'identityAddress',
+    'INCOME_RECORD',   'incomeAddress',
+    'RECOMMENDED', 'REVENUE_DEPT',
+    'Your income certificate records the same address. Updating it as well helps make sure letters about it reach you.'
+  )
+) as r (
+  source_record_type, source_field_key,
+  target_record_type, target_field_key,
+  impact_level, department_code, reason
+)
+left join public.departments d on d.code = r.department_code
+on conflict (source_record_type, source_field_key, target_record_type, target_field_key)
+do update
+  set impact_level              = excluded.impact_level,
+      responsible_department_id = excluded.responsible_department_id,
+      reason                    = excluded.reason,
+      active                    = true;

@@ -290,18 +290,63 @@ describe.skipIf(!enabled)('field_policies — RLS', () => {
     expect(await countPolicies()).toBe(before);
 
     // And an existing policy cannot be rewritten into an editable one.
-    const { error: updateError } = await client
+    //
+    // ASSERTED AS AN OUTCOME, NOT AS AN ERROR, and the distinction is a real
+    // property of RLS rather than a weaker test. The two verbs fail
+    // differently:
+    //
+    //   INSERT  the new row violates the table's WITH CHECK, so PostgREST
+    //           returns 403 / SQLSTATE 42501 — the assertion above is right.
+    //   UPDATE  there is no permissive USING policy for `authenticated`, so the
+    //           target rows are INVISIBLE to the statement. Updating zero rows
+    //           is not an error in Postgres, and PostgREST correctly answers
+    //           200 with an empty result.
+    //
+    // Requiring an error here asserted a mechanism the database does not use,
+    // and would have kept failing however secure the table was. What actually
+    // matters is that NOTHING CHANGED, so that is what is checked: `.select()`
+    // makes the mutation return the rows it affected, giving an exact affected
+    // -row count, and the policy is then re-read to prove the stored value
+    // survived.
+    const { data: updatedRows, error: updateError } = await client
       .from('field_policies')
       .update({ editability: 'EDITABLE' })
       .eq('record_type', 'IDENTITY_RECORD')
-      .eq('field_key', 'identityRegistryReference');
-    expect(updateError).not.toBeNull();
+      .eq('field_key', 'identityRegistryReference')
+      .select();
+
+    // Whether the driver reports an error or a silent no-op, the row count it
+    // touched must be zero.
+    expect(updatedRows ?? []).toHaveLength(0);
+    if (updateError !== null) expect(updateError.code).toBe('42501');
 
     const stillImmutable = await findActiveFieldPolicy(
       'IDENTITY_RECORD',
       'identityRegistryReference',
     );
     expect(stillImmutable?.editability).toBe('IMMUTABLE');
+
+    // Nor may a policy be deleted. Same shape: zero rows affected, and the row
+    // still there afterwards.
+    const { data: deletedRows } = await client
+      .from('field_policies')
+      .delete()
+      .eq('record_type', 'IDENTITY_RECORD')
+      .eq('field_key', 'identityRegistryReference')
+      .select();
+
+    expect(deletedRows ?? []).toHaveLength(0);
+    expect(await countPolicies()).toBe(before);
+    expect(
+      (await findActiveFieldPolicy('IDENTITY_RECORD', 'identityRegistryReference'))?.editability,
+    ).toBe('IMMUTABLE');
+
+    // And the forged INSERT above left nothing behind.
+    const { data: forged } = await getDatabaseClient()
+      .from('field_policies')
+      .select('field_key')
+      .eq('field_key', 'identityForgedByCitizen');
+    expect(forged ?? []).toHaveLength(0);
 
     await client.auth.signOut();
   });

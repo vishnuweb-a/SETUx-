@@ -862,6 +862,58 @@ export type Database = {
         };
         Relationships: [];
       };
+      /**
+       * Change & Correction Service, Phase 5 — the dependency rule table.
+       *
+       * Configuration, like `field_policies`: no citizen id, no change request,
+       * no proposed value. A rule states that changing one record type's field
+       * affects another record TYPE — whether a given citizen holds such a
+       * record is resolved per request against `citizen_records`.
+       */
+      change_dependency_rules: {
+        Row: {
+          id: string;
+          source_record_type: string;
+          source_field_key: string;
+          target_record_type: string;
+          target_field_key: string;
+          impact_level: Database['public']['Enums']['change_impact_level'];
+          /** NULL for a provider such as the synthetic bank, which has no officer queue. */
+          responsible_department_id: string | null;
+          /** Citizen-facing, rendered verbatim on the impact preview. Never blank. */
+          reason: string;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_record_type: string;
+          source_field_key: string;
+          target_record_type: string;
+          target_field_key: string;
+          impact_level: Database['public']['Enums']['change_impact_level'];
+          responsible_department_id?: string | null;
+          reason: string;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          source_record_type?: string;
+          source_field_key?: string;
+          target_record_type?: string;
+          target_field_key?: string;
+          impact_level?: Database['public']['Enums']['change_impact_level'];
+          responsible_department_id?: string | null;
+          reason?: string;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -985,6 +1037,13 @@ export type Database = {
       review_decision: 'APPROVED' | 'REJECTED' | 'REQUESTED_INFO';
       /** field_policies.editability — Change & Correction Service, Phase 1. */
       field_editability: 'EDITABLE' | 'CONDITIONALLY_EDITABLE' | 'IMMUTABLE';
+      /**
+       * change_dependency_rules.impact_level — Change & Correction Service,
+       * Phase 5. Ordered by strength: REQUIRED > RECOMMENDED > OPTIONAL, which
+       * is the order the engine's merge rule uses when several rules reach one
+       * target.
+       */
+      change_impact_level: 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL';
     };
     CompositeTypes: Record<never, never>;
   };
