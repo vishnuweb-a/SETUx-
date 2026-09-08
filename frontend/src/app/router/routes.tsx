@@ -21,6 +21,11 @@ import {
 import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scholarships';
 import { HomeRedirect } from '@/app/pages/home-redirect';
 import { ApplicationDetailPage, ApplicationListPage } from '@/features/applications';
+import {
+  ChangeDetailsHandoffPage,
+  ChangeDetailsRecordPage,
+  ChangeDetailsRecordsPage,
+} from '@/features/change-details';
 import { ConsentPage } from '@/features/consents';
 import {
   GovernmentDashboardPage,
@@ -124,6 +129,23 @@ export const router = createBrowserRouter([
               {
                 path: '/citizen/services/:scholarshipId',
                 element: <ScholarshipDetailPage />,
+              },
+
+              // Change & Correction — Phase 3. Record selection, then the
+              // fields of one record, then the selection handed to the phase
+              // that will build the edit form. All three are reads: nothing
+              // here creates a correction request.
+              {
+                path: '/citizen/change-details',
+                element: <ChangeDetailsRecordsPage />,
+              },
+              {
+                path: '/citizen/change-details/:recordId',
+                element: <ChangeDetailsRecordPage />,
+              },
+              {
+                path: '/citizen/change-details/:recordId/fields',
+                element: <ChangeDetailsHandoffPage />,
               },
             ],
           },

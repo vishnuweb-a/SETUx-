@@ -1,4 +1,4 @@
-import { ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
+import { ArrowRight, GraduationCap, ShieldCheck, SquarePen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -46,6 +46,33 @@ export function CitizenDashboardPage() {
           <Link to="/citizen/services">
             <GraduationCap className="size-4" aria-hidden />
             Browse scholarships
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </Button>
+      </section>
+
+      {/* Change & Correction. A real destination with a real screen behind it,
+          which is the bar the featured band above is held to. */}
+      <section
+        aria-labelledby="corrections-heading"
+        className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+      >
+        <div className="flex items-start gap-3">
+          <SquarePen className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+          <div>
+            <h2 id="corrections-heading" className="font-semibold">
+              Something wrong in your records?
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review the government records linked to your account and request a correction to the
+              details that can be changed.
+            </p>
+          </div>
+        </div>
+
+        <Button asChild variant="outline" className="w-fit shrink-0">
+          <Link to="/citizen/change-details">
+            Change details
             <ArrowRight className="size-4" aria-hidden />
           </Link>
         </Button>
