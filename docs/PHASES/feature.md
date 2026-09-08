@@ -23,6 +23,37 @@ The feature must preserve source ownership, department isolation,
 explicit consent, old/proposed values, provenance, audit history, and
 partial outcomes.
 
+CANONICAL PHASE NUMBERING
+
+This list is authoritative. Where an older draft of this document, a
+commit message or a code comment used a different number, this list
+wins.
+
+   0   Architecture & Existing-System Discovery      COMPLETE
+   1   Editable Field Policy Engine                  COMPLETE
+   2   Citizen Record Registry                       COMPLETE
+   3   Citizen Change Details Entry / Field Selection COMPLETE
+   4   Change Draft & Editable Form                  COMPLETE
+   5   Dependency & Impact Detection Engine
+   6   Impact Preview & Target Selection
+   7   Change Consent Bundle
+   8   Parent & Department-Specific Requests
+   9   Department Routing & Government Queue
+  10   Officer Review
+  11   Connector Update / Source-System Application
+  12   Parent Status Aggregation
+  13   Citizen Tracking
+  14   Notifications
+  15   Version History, Provenance & Audit
+  16   Security & Abuse Hardening
+  17   Integration & E2E
+  18   Demo Validation
+  19   Documentation & Finalization
+
+Note that Phases 10 and 11 of the SCHOLARSHIP workflow (officer review,
+verification) are a different, earlier feature and are unrelated to the
+numbers above; see docs/PHASES/phase.md.
+
 Phase 0 --- Architecture & Existing-System Discovery
 
 Objective
@@ -72,7 +103,7 @@ All Phase 0 blockers are resolved. Accepted decisions:
 2. Banking — IN SCOPE, synthetic only. Modelled as a non-departmental
    provider demonstrating STEP_UP_REQUIRED. SetuX authentication never
    bypasses a provider's own security. No bank connector before
-   Phase 10.  (arch doc §8.1, §20.5)
+   Phase 11.  (arch doc §8.1, §20.5)
 
 3. Record authority ownership — explicit record_type → authority →
    data_source map using stable UUID foreign keys. The fragile
@@ -225,7 +256,7 @@ documented in docs/API/field-policies.md §8). The third acceptance
 criterion --- "UI clearly explains field eligibility" --- is
 deliberately NOT met in this phase: Phase 1 has no Change Details UI
 (arch doc §25), and the endpoint returns the authority and dependency
-group precisely so the Phase 2+ UI can explain a locked field rather
+group precisely so the Phase 3+ UI can explain a locked field rather
 than hide it.
 
 Not implemented, per arch doc §25: citizen_records, demo fixture
@@ -234,7 +265,18 @@ target selection, change consent, government review,
 RecordUpdateConnector, notifications, the bank connector, and any
 source-system write. No frontend file was added or changed.
 
-Phase 2 --- Citizen Change Details Entry Flow
+Phase 2 --- Citizen Record Registry
+     and
+Phase 3 --- Citizen Change Details Entry / Field Selection
+
+NUMBERING NOTE. What follows was originally written as a single
+"Phase 2 --- Citizen Change Details Entry Flow" and was DELIVERED as
+two: Phase 2 built the backend registry and the database (commit
+52c1d04), Phase 3 built the citizen-facing record and field-selection
+screens on top of it (commit 72b8e97). The canonical numbering records
+that split, and every phase after it shifts by one accordingly. The
+objective and acceptance below cover both halves; the paragraph near
+the end of this section marks which criteria belong to Phase 3.
 
 Objective
 
@@ -301,7 +343,7 @@ Delivered:
    authority_department_id is NULL for bank records because the bank
    is a PROVIDER, not a department: it has no officer queue and never
    will (arch §20.6, §8.1). No bank connector, step-up auth, OTP or
-   network call was built --- all Phase 10. The existing DigiLocker
+   network call was built --- all Phase 11. The existing DigiLocker
    BANK_DETAILS document requirement is unchanged.
 
 4. Backend module backend/src/modules/citizen-records/ --- routes →
@@ -332,7 +374,7 @@ Delivered:
 7. Fixture --- scripts/seed-change-correction-demo.mjs provisions
    five records and 29 field values for citizen@setux.test, all
    sharing the synthetic holder name "Demo Old Name" (the
-   precondition for the Phase 4 dependency demo, arch §23).
+   precondition for the Phase 5 dependency demo, arch §23).
 
    Separate from seed-auth-users.mjs by design, and not
    auto-provisioned on login or onboarding (arch §21 rejects that).
@@ -365,10 +407,12 @@ Acceptance met: only the authenticated citizen's records are
 returned; cross-citizen access is impossible at three independent
 layers (query predicate, RLS policy, and the absence of any parameter
 naming a citizen). The "loading, empty, unavailable, and error
-states" criterion is a UI concern and is deliberately NOT met in this
-phase --- Phase 2 as scoped here is backend and database only, and
-the empty inventory, UNAVAILABLE status and error codes the UI needs
-are all present in the contract for it to render.
+states" criterion is a UI concern and belongs to PHASE 3 --- Phase 2
+as scoped here is backend and database only, and the empty inventory,
+UNAVAILABLE status and error codes the UI needs are all present in the
+contract for it to render. Phase 3 delivered those screens: the record
+chooser, the per-record field list with its policy explanations, and
+the field selection handed forward (docs/FEATURES/change-details-entry.md).
 
 Not implemented, per arch doc §25: change_requests, proposed values,
 the dependency engine, impact detection, target selection, change
@@ -376,7 +420,7 @@ consent, officer change review, RecordUpdateConnector, notifications,
 the bank connector, and any record mutation API or source-system
 write. No frontend file was added or changed.
 
-Phase 3 --- Change Draft & Editable Form
+Phase 4 --- Change Draft & Editable Form
 
 Objective
 
@@ -421,7 +465,7 @@ Draft can be resumed.
 
 Server validates every requested field.
 
-Phase 4 --- Dependency & Impact Detection Engine
+Phase 5 --- Dependency & Impact Detection Engine
 
 Objective
 
@@ -460,7 +504,7 @@ Circular rules cannot cause infinite processing.
 
 Only the citizen's relevant records are returned.
 
-Phase 5 --- Impact Preview & Target Selection
+Phase 6 --- Impact Preview & Target Selection
 
 Objective
 
@@ -495,7 +539,7 @@ records - responsible departments - mandatory vs optional targets
 
 before granting consent.
 
-Phase 6 --- Change Consent Bundle
+Phase 7 --- Change Consent Bundle
 
 Objective
 
@@ -527,7 +571,7 @@ Consent cannot be reused outside its scope.
 
 Expired/revoked consent blocks protected actions.
 
-Phase 7 --- Parent & Department-Specific Requests
+Phase 8 --- Parent & Department-Specific Requests
 
 Objective
 
@@ -567,7 +611,7 @@ Parent/child state remains consistent.
 
 One target failure does not corrupt others.
 
-Phase 8 --- Department Routing & Government Queue
+Phase 9 --- Department Routing & Government Queue
 
 Objective
 
@@ -597,7 +641,7 @@ Cross-department access denied.
 
 Citizen cannot access officer endpoints.
 
-Phase 9 --- Officer Review
+Phase 10 --- Officer Review
 
 Objective
 
@@ -625,7 +669,7 @@ Additional-information flow is represented explicitly.
 
 Review transition is atomic where required.
 
-Phase 10 --- Connector Update / Source-System Application
+Phase 11 --- Connector Update / Source-System Application
 
 Objective
 
@@ -658,7 +702,7 @@ Retry is safe/idempotent.
 
 Source provenance retained.
 
-Phase 11 --- Parent Status Aggregation
+Phase 12 --- Parent Status Aggregation
 
 Objective
 
@@ -687,7 +731,7 @@ Rejection does not erase successful targets.
 
 Citizen can understand partial outcomes.
 
-Phase 12 --- Citizen Tracking
+Phase 13 --- Citizen Tracking
 
 Objective
 
@@ -722,7 +766,7 @@ No internal secrets/provider payloads exposed.
 
 Historical requests remain available.
 
-Phase 13 --- Notifications
+Phase 14 --- Notifications
 
 Objective
 
@@ -742,7 +786,7 @@ Retry does not create uncontrolled duplicate notifications.
 
 Notification links to correct request.
 
-Phase 14 --- Version History, Provenance & Audit
+Phase 15 --- Version History, Provenance & Audit
 
 Objective
 
@@ -768,7 +812,7 @@ Important transitions have provenance.
 
 Ordinary citizens/officers cannot mutate audit history.
 
-Phase 15 --- Security & Abuse Hardening
+Phase 16 --- Security & Abuse Hardening
 
 Objective
 
@@ -785,7 +829,7 @@ immutable-field manipulation - forged target - forged consent - invalid
 lifecycle transition - duplicate approval - contradictory decision -
 connector retry - finalized request mutation
 
-Phase 16 --- Integration & E2E Testing
+Phase 17 --- Integration & E2E Testing
 
 Primary Scenario --- Name Change
 
@@ -817,7 +861,7 @@ more-information request - partial completion
 Also test desktop, tablet, mobile, keyboard navigation, focus states,
 labels, errors, dialogs, and non-color-only statuses.
 
-Phase 17 --- Demo Validation
+Phase 18 --- Demo Validation
 
 Recommended Synthetic Demo
 
@@ -841,7 +885,7 @@ Citizen receives completion notification.
 Never bypass consent, authorization, review, or connector application
 for the demo.
 
-Phase 18 --- Documentation & Finalization
+Phase 19 --- Documentation & Finalization
 
 Update/create: - feature overview - API specification - database/schema
 docs - consent model - editable-field policy - dependency rules -

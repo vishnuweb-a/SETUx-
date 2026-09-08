@@ -42,3 +42,6 @@ supabase/.temp/
 
 # Claude Code local overrides (machine-specific)
 .claude/settings.local.json
+
+# Playwright MCP agent tooling artifacts (never commit)
+.playwright-mcp/

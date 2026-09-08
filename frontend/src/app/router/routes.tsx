@@ -22,9 +22,10 @@ import { ScholarshipCataloguePage, ScholarshipDetailPage } from '@/features/scho
 import { HomeRedirect } from '@/app/pages/home-redirect';
 import { ApplicationDetailPage, ApplicationListPage } from '@/features/applications';
 import {
-  ChangeDetailsHandoffPage,
+  ChangeDetailsEditPage,
   ChangeDetailsRecordPage,
   ChangeDetailsRecordsPage,
+  ChangeDraftPage,
 } from '@/features/change-details';
 import { ConsentPage } from '@/features/consents';
 import {
@@ -131,13 +132,23 @@ export const router = createBrowserRouter([
                 element: <ScholarshipDetailPage />,
               },
 
-              // Change & Correction — Phase 3. Record selection, then the
-              // fields of one record, then the selection handed to the phase
-              // that will build the edit form. All three are reads: nothing
-              // here creates a correction request.
+              // Change & Correction — Phases 3 and 4. Record selection, the
+              // fields of one record, the form that collects new values, and
+              // the saved draft.
+              //
+              // The first three are keyed by RECORD; the fourth is keyed by the
+              // DRAFT's own id, and that shift is deliberate. A form reached
+              // from a field selection cannot survive a refresh, because the
+              // selection lives in navigation state. Once the draft exists it
+              // has a durable identity, so it gets a URL of its own and the
+              // citizen can return to it (task §12).
               {
                 path: '/citizen/change-details',
                 element: <ChangeDetailsRecordsPage />,
+              },
+              {
+                path: '/citizen/change-details/drafts/:changeRequestId',
+                element: <ChangeDraftPage />,
               },
               {
                 path: '/citizen/change-details/:recordId',
@@ -145,7 +156,7 @@ export const router = createBrowserRouter([
               },
               {
                 path: '/citizen/change-details/:recordId/fields',
-                element: <ChangeDetailsHandoffPage />,
+                element: <ChangeDetailsEditPage />,
               },
             ],
           },
