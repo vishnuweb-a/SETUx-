@@ -15,8 +15,27 @@ import { Skeleton } from '@/components/ui/skeleton';
  * `pb-28` leaves room for the fixed action bar, which would otherwise cover the
  * last field on a phone.
  */
+/**
+ * The assurance line shown under the heading on the two FORM screens.
+ *
+ * Phrased for a screen with inputs on it. A read-only screen overrides it —
+ * telling somebody to "enter what each detail should say" on a page with
+ * nothing to type into is worse than saying nothing.
+ */
+const DEFAULT_SUBHEADING =
+  'Enter what each detail should say. Your government record is not changed by saving this request.';
+
 export interface ChangeFormShellProps {
   readonly heading: string;
+  /**
+   * The line under the heading.
+   *
+   * Defaults to the form wording. Every screen using this shell states SOME
+   * version of "nothing official has changed", because it is the thing a
+   * citizen is most likely to be uncertain about — what varies is whether the
+   * screen is asking them to type.
+   */
+  readonly subheading?: string;
   /** Where "Record" in the breadcrumb points, when the record is known. */
   readonly recordId: string | null;
   readonly breadcrumbLeaf: string;
@@ -25,6 +44,7 @@ export interface ChangeFormShellProps {
 
 export function ChangeFormShell({
   heading,
+  subheading = DEFAULT_SUBHEADING,
   recordId,
   breadcrumbLeaf,
   children,
@@ -68,12 +88,9 @@ export function ChangeFormShell({
       <header>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{heading}</h1>
         {/* Stated on every screen of this flow, because it is the thing a
-            citizen is most likely to be uncertain about: entering a new value
-            asks for a change, it does not make one. */}
-        <p className="mt-1 text-sm text-muted-foreground">
-          Enter what each detail should say. Your government record is not changed by saving this
-          request.
-        </p>
+            citizen is most likely to be uncertain about: asking for a change
+            does not make one. */}
+        <p className="mt-1 text-sm text-muted-foreground">{subheading}</p>
       </header>
 
       {children}

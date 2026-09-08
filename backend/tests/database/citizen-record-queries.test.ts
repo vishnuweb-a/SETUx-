@@ -70,6 +70,30 @@ const countFields = async (): Promise<number> => {
   return (data ?? []).length;
 };
 
+/**
+ * The demo citizen's stored holder name, read through the SERVICE ROLE.
+ *
+ * Read privileged rather than through the citizen's own client on purpose: the
+ * question being asked is "what does the database actually hold?", and a read
+ * that RLS could filter would answer a different one. Used to capture the value
+ * before a refused write and compare it afterwards, so the assertion is
+ * "unchanged" rather than the weaker "not equal to the forged string".
+ */
+const holderNameValue = async (): Promise<unknown> => {
+  const citizenId = await demoCitizenId();
+  if (!citizenId) return null;
+
+  const { data } = await getDatabaseClient()
+    .from('citizen_record_fields')
+    .select('field_value, citizen_records!inner ( citizen_id )')
+    .eq('field_key', 'identityHolderName')
+    .eq('citizen_records.citizen_id', citizenId)
+    .limit(1)
+    .maybeSingle();
+
+  return data?.field_value ?? null;
+};
+
 describe.skipIf(!enabled)('citizen_records — schema', () => {
   it('exists and is readable through the service role', async () => {
     const { error } = await getDatabaseClient().from('citizen_records').select('id').limit(1);
@@ -501,29 +525,61 @@ describe.skipIf(!enabled)('Row Level Security', () => {
 
     // A citizen cannot rewrite what a government source holds about them —
     // which is the entire reason the correction workflow has to exist.
-    const { error: updateError } = await client
+    //
+    // ASSERTED AS AN OUTCOME, NOT AS AN ERROR. The INSERT above violates the
+    // table's WITH CHECK and so genuinely returns 403 / SQLSTATE 42501, which
+    // is why that assertion stands. UPDATE and DELETE fail differently: there
+    // is no permissive USING policy for `authenticated` on these tables, so the
+    // target rows are INVISIBLE to the statement, and touching zero rows is not
+    // an error in Postgres — PostgREST answers 200 with an empty result.
+    //
+    // Requiring an error here asserted a mechanism the database does not use.
+    // What actually matters is that nothing changed, so that is what is
+    // checked: `.select()` makes each mutation return the rows it affected,
+    // giving an exact affected-row count, and the protected value is then
+    // re-read through the service role to prove it survived.
+    const beforeHolder = await holderNameValue();
+
+    const { data: updatedFields, error: updateError } = await client
       .from('citizen_record_fields')
       .update({ field_value: 'Demo Forged Name' })
-      .eq('field_key', 'identityHolderName');
-    expect(updateError).not.toBeNull();
+      .eq('field_key', 'identityHolderName')
+      .select();
 
-    const { error: deleteError } = await client
+    expect(updatedFields ?? []).toHaveLength(0);
+    if (updateError !== null) expect(updateError.code).toBe('42501');
+
+    const { data: deletedRecords, error: deleteError } = await client
       .from('citizen_records')
       .delete()
-      .eq('citizen_id', selfId);
-    expect(deleteError).not.toBeNull();
+      .eq('citizen_id', selfId)
+      .select();
+
+    expect(deletedRecords ?? []).toHaveLength(0);
+    if (deleteError !== null) expect(deleteError.code).toBe('42501');
 
     expect(await countRecords()).toBe(recordsBefore);
     expect(await countFields()).toBe(fieldsBefore);
 
-    // The holder name is untouched by all of the above.
-    const { data: holder } = await getDatabaseClient()
+    // The holder name is untouched by all of the above — not merely "not the
+    // forged value", but byte-identical to what it was before the attempts.
+    const afterHolder = await holderNameValue();
+    expect(afterHolder).not.toBe('Demo Forged Name');
+    expect(afterHolder).toStrictEqual(beforeHolder);
+
+    // And no forged value exists anywhere in the table, under any record.
+    const { data: forgedValues } = await getDatabaseClient()
       .from('citizen_record_fields')
-      .select('field_value')
-      .eq('field_key', 'identityHolderName')
-      .limit(1)
-      .maybeSingle();
-    expect(holder?.field_value).not.toBe('Demo Forged Name');
+      .select('id')
+      .eq('field_value', 'Demo Forged Name' as never);
+    expect(forgedValues ?? []).toHaveLength(0);
+
+    // Nor did the refused INSERT leave a record behind.
+    const { data: forgedRecords } = await getDatabaseClient()
+      .from('citizen_records')
+      .select('id')
+      .eq('source_record_ref', 'SYNTH-FORGED-BY-CITIZEN');
+    expect(forgedRecords ?? []).toHaveLength(0);
 
     await client.auth.signOut();
   });

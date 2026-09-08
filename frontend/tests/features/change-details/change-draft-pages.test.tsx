@@ -400,12 +400,25 @@ describe('the saved draft', () => {
     expect(screen.getByText(/has not been sent to any department/i)).toBeVisible();
   });
 
-  it('names the next stage as not built rather than offering it', async () => {
+  it('offers the impact preview and stops there', async () => {
     renderDraft();
 
-    expect(await screen.findByText(/what happens next is not built yet/i)).toBeVisible();
+    // Phase 5 gave this screen a real onward step: impact detection exists, so
+    // the link leads to a page that answers a question. What is still absent is
+    // everything after it.
+    const link = await screen.findByRole('link', { name: /check affected records/i });
+    expect(link).toHaveAttribute(
+      'href',
+      `/citizen/change-details/drafts/${DRAFT_ID}/impact`,
+    );
+
+    expect(screen.getByText(/nothing has been sent yet/i)).toBeVisible();
+
     // No control that would navigate into an unbuilt phase.
     expect(screen.queryByRole('button', { name: /^continue$/i })).not.toBeInTheDocument();
+    for (const label of [/consent/i, /^submit/i, /^send/i]) {
+      expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
+    }
   });
 
   it('revises the proposed value', async () => {

@@ -45,12 +45,23 @@ describe.skipIf(!enabled)('Supabase connectivity and schema', () => {
     });
   });
 
-  it('has the four seeded mock data sources', async () => {
+  it('has exactly the seeded synthetic data sources', async () => {
     const { data, error } = await db.from('data_sources').select('code').order('code');
 
     expect(error).toBeNull();
+    // An EXACT list, still — the point of this assertion is that a source
+    // appears only when a migration deliberately adds one, so a loosened
+    // `toContain` would stop catching the case it exists for: a stray or
+    // duplicated source row reaching the project.
+    //
+    // MOCK_BANK_API joined the four originals in the Phase 2 migration of the
+    // Change & Correction Service (20260907185358). The bank is the authority
+    // for BANK_DETAILS as a correctable RECORD, which is a different thing from
+    // the DigiLocker passbook requirement the scholarship flow already used —
+    // hence its own source row (arch §20.6, gap C6).
     expect(data?.map((row) => row.code)).toEqual([
       'DIGILOCKER_MOCK',
+      'MOCK_BANK_API',
       'MOCK_EDUCATION_API',
       'MOCK_IDENTITY_API',
       'MOCK_INCOME_API',
