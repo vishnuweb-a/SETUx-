@@ -147,6 +147,34 @@ export const ERROR_CODES = {
   CITIZEN_RECORD_ONBOARDING_REQUIRED: 'CITIZEN_RECORD_ONBOARDING_REQUIRED',
   CITIZEN_RECORD_UNSUPPORTED_TYPE: 'CITIZEN_RECORD_UNSUPPORTED_TYPE',
 
+  /**
+   * Change & Correction Service, Phase 4 — the change draft.
+   *
+   * CHANGE_REQUEST_ONBOARDING_REQUIRED mirrors its Phase 2 counterpart: a
+   * correction request is citizen-scoped, and a citizen who has not completed
+   * onboarding is not yet somebody SetuX can attribute one to.
+   *
+   * CHANGE_REQUEST_VALUE_UNCHANGED is a 400 about the request the citizen
+   * wrote, not about their permission: asking for a value the source already
+   * holds is not a correction, and it is refused before it can consume a
+   * department's review to conclude nothing needed doing. Distinct from
+   * VALIDATION_ERROR because the citizen can act on it specifically — the field
+   * is fine, the value is the problem.
+   *
+   * There is deliberately NO code here for "that draft belongs to another
+   * citizen", and none for "that field is on somebody else's record". Both are
+   * NOT_FOUND, because ownership is a predicate in the query rather than a check
+   * applied afterwards — and a code naming the distinction would leak the fact
+   * the 404 exists to hide.
+   *
+   * FIELD_NOT_EDITABLE and FIELD_POLICY_NOT_FOUND are reused rather than
+   * duplicated with a `CHANGE_REQUEST_` prefix: an immutable field refuses a
+   * correction for the same reason whether it was asked about or asked for, and
+   * the Phase 1 policy engine raises them from one place.
+   */
+  CHANGE_REQUEST_ONBOARDING_REQUIRED: 'CHANGE_REQUEST_ONBOARDING_REQUIRED',
+  CHANGE_REQUEST_VALUE_UNCHANGED: 'CHANGE_REQUEST_VALUE_UNCHANGED',
+
   CONNECTOR_ERROR: 'CONNECTOR_ERROR',
   CONNECTOR_TIMEOUT: 'CONNECTOR_TIMEOUT',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
