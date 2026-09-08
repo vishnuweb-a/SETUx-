@@ -1,4 +1,13 @@
-import { FileText, Grid2x2, LayoutDashboard, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import {
+  FileText,
+  Grid2x2,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  SquarePen,
+  X,
+} from 'lucide-react';
 import { useEffect, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,6 +42,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/citizen', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/citizen/services', label: 'Services', icon: Grid2x2 },
   { to: '/citizen/applications', label: 'My Applications', icon: FileText },
+  { to: '/citizen/change-details', label: 'Change Details', icon: SquarePen },
 ];
 
 /**
@@ -237,9 +247,11 @@ const sectionTitleFor = (pathname: string): string =>
     ? 'Review and Grant Consent'
     : pathname.startsWith('/citizen/applications')
       ? 'My Applications'
-      : pathname.startsWith('/citizen/services')
-        ? 'Scholarships'
-        : 'Dashboard';
+      : pathname.startsWith('/citizen/change-details')
+        ? 'Change Details'
+        : pathname.startsWith('/citizen/services')
+          ? 'Scholarships'
+          : 'Dashboard';
 
 /**
  * Who is signed in, and the way out.
